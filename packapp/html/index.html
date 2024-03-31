@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>人脸侦测</title>
+<style>
+	* {
+		margin: 0;
+		padding: 0;	
+	}
+	.content {
+		margin: 0 auto;
+		width: 200px;
+		padding-top: 100px; 
+	}
+	.platformtitle {
+		margin: 10px 0;
+	}
+	h1 {
+		text-align: left;
+  		color: #656565;
+	}
+	#liveview {
+		width: 352px;
+		height: 288px;
+		margin: 0;
+		background: #343434;
+		/*border: 1px solid #000000;*/
+	}
+	
+	.drawButtons {
+		margin: 10px auto;
+  		padding: 0 15px;
+	}
+	
+	.drawButtons input {
+		background-image: none;
+		background-color: #ffffff;
+		padding: 4px 8px;
+		margin: 0 10px 0 0;
+		line-height: normal;
+		border: 1px solid #8C8C8C;
+		cursor: pointer;
+		border-radius: 2px;
+		display: inline-block;
+		text-align: center;
+		white-space: nowrap;
+		cursor: pointer;
+		-webkit-user-select: none;
+		width: 100px;
+	}
+	.videoShield {
+		position: absolute;
+		margin: 0 auto;
+		background-color: transparent;
+	}
+	.liveviewBlock {
+		position: absolute;
+		width: 0;
+  		height: 0;
+	}
+	#liveviewCanvas {
+		background-color: transparent;
+		border: none;
+		position: relative;
+		width: 352px;
+		height: 288px;
+		bottom: 288px;
+	}
+	.liveviewShadow {
+		border: none;
+		position: relative;
+		width: 352px;
+		height: 288px;
+		bottom: 288px;
+		/*IE8 bug, need transparents image to prevent click event*/
+		background: url(transparent.png);
+	}	
+	.params {
+		margin: 10px auto;
+		padding: 10px;
+	}
+	.params div {
+		margin: 20px 0;
+	}
+	.params span {
+		width: 75px;
+		display: inline-block;
+	}
+	.params .checkbox {
+		vertical-align: middle;
+  		margin-right: 5px;
+	}
+	.save input {
+		padding: 7px 8px;
+		width: 165px;
+		border: 0;
+		border-radius: 2px;
+		text-align: center;
+		white-space: nowrap;
+		cursor: pointer;
+		-webkit-user-select: none;
+		color: #ffffff;
+		background-color: #d71920;
+		cursor:pointer;
+	}
+</style>
+<script src="script/jquery-1.12.1.js"></script>
+<script>
+	var szHttpProtocol = location.protocol + "//";
+	var szHostName = location.hostname;
+	var iHttpPort = location.port;
+	var szUrl = szHttpProtocol + szHostName + ":" + iHttpPort + "/ISAPI/Custom/OpenPlatform/APP/test_demo/FaceRecognition";
+
+    function extendJQuery () {
+        if (!$.browser) {
+            $.extend({
+                browser: {}
+            });
+            (function () {
+                var szUserAgent = navigator.userAgent.toLowerCase();
+                // Useragent RegExp
+                var rwebkit = /(webkit)[ \/]([\w.]+)/;
+                var ropera = /(opera)(?:.*version)?[ \/]([\w.]+)/;
+                var rmsie = /(msie) ([\w.]+)/;
+                var rmsie2 = /(trident.*rv:)([\w.]+)/;// IE11
+                var rmozilla = /(mozilla)(?:.*? rv:([\w.]+))?/;
+
+                var match = rwebkit.exec(szUserAgent) ||
+                    ropera.exec(szUserAgent) ||
+                    rmsie.exec(szUserAgent) ||
+                    rmsie2.exec(szUserAgent) ||// IE11
+                    szUserAgent.indexOf("compatible") < 0 && rmozilla.exec(szUserAgent) || [];
+
+                if (match.length > 0 && match[1].indexOf("trident") > -1) {// IE11
+                    match[1] = "msie";
+                }
+
+                if (match[1]) {
+                    $.browser[match[1]] = true;
+                    $.browser.version = match[2] || "";
+                }
+
+                // Deprecated, use jQuery.browser.webkit instead
+                if ($.browser.webkit) {
+                    $.browser.safari = true;
+                }
+            })();
+        }
+        // Cross-browser xml parsing
+        jQuery.parseXML = function( data ) {
+            var xml, tmp;
+            if ( !data || typeof data !== "string" ) {
+                return null;
+            }
+            try {
+                if ( window.DOMParser && !($.browser.msie && parseInt($.browser.version, 10) === 9) ) { // Standard
+                    tmp = new window.DOMParser();
+                    xml = tmp.parseFromString( data, "text/xml" );
+                } else { // IE
+                    xml = new window.ActiveXObject( "Microsoft.XMLDOM" );
+                    xml.async = "false";
+                    xml.loadXML( data );
+                }
+            } catch ( e ) {
+                xml = undefined;
+            }
+            if ( !xml || !xml.documentElement || xml.getElementsByTagName( "parsererror" ).length ) {
+                jQuery.error( "Invalid XML: " + data );
+            }
+            return xml;
+        };
+    }
+
+	function parseXmlFromStr (szXml) {
+		if (null === szXml || "" === szXml) {
+			return null;
+		}
+		if ("string" !== typeof szXml) {
+			return null;
+		}
+		szXml = szXml.replace(/&(?!lt;|amp;|gt;|apos;|quot;)/g, "&amp;");
+		var oXml = null;
+		try {
+			if($.browser.msie && parseInt($.browser.version, 10) === 9) {
+				var oXml = new ActiveXObject("Microsoft.XMLDOM");
+				oXml.async = false;
+				oXml.loadXML(szXml);
+			} else {
+				var oParser = new DOMParser();
+				oXml = oParser.parseFromString(szXml, "text/xml");
+			}
+		} catch (e) {
+			var oXml = new ActiveXObject("Microsoft.XMLDOM");
+			oXml.async = false;
+			oXml.loadXML(szXml);
+		}
+		return oXml;
+	}
+
+	function setParam () {
+		var szXml = '<?xml version="1.0" encoding="UTF-8"?>';
+		szXml += "<FaceRecognition><enable>";
+		if ($("#enabled").prop("checked")) {
+			szXml += "true";
+		} else {
+			szXml += "false";
+		}
+		szXml += "</enable></FaceRecognition>";
+
+		szXml = parseXmlFromStr(szXml);
+
+		$.ajax({
+			type: "PUT",
+			beforeSend: function (xhr) {
+				xhr.setRequestHeader("If-Modified-Since", "0");
+			},
+			async: false,
+			timeout: 30000,
+			url: szUrl,
+			processData: false,
+			data: szXml,
+			success: function (xmlDoc, textStatus, xhr) {
+				alert("保存成功");
+			},
+			error: function (xhr, textStatus, errorThrown) {
+                alert("保存失败");
+			}
+		});
+	}
+
+	function getParam () {
+		$.ajax({
+			type: "GET",
+			beforeSend: function (xhr) {
+				xhr.setRequestHeader("If-Modified-Since", "0");
+			},
+			// async: false,
+			timeout: 30000,
+			url: szUrl,
+			processData: false,
+			success: function (xmlDoc, textStatus, xhr) {
+				if ($(xmlDoc).find("enable").eq(0).text() === "true") {
+					$("#enabled").prop("checked", true);
+				} else {
+					$("#enabled").prop("checked", false);
+				}
+			},
+			error: function (xhr, textStatus, errorThrown) {
+                
+			}
+		});
+	}
+
+	extendJQuery();
+	getParam();
+
+</script>
+</head>
+<body>
+<div class="content">
+	<div class="platformtitle">
+    	<h1>人脸侦测</h1>
+    </div>
+    <div class="params">
+        <div>
+            <span>启用</span>
+            <input type="checkbox" class="checkbox" id="enabled"/>
+        </div>
+    </div>
+    <div class="save">
+        <input type="button" value="保存" onClick="setParam()" />
+    </div>
+</div>
+</body>
+</html>

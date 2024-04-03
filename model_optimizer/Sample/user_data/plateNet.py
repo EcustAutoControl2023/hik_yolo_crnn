@@ -1,12 +1,15 @@
 import torch.nn as nn
+from torch.nn import functional as F
 import torch
 
+from model_checker import ModelChecker
 
 class myNet_ocr(nn.Module):
     def __init__(self,cfg=None,num_classes=78,export=False):
         super(myNet_ocr, self).__init__()
         if cfg is None:
-            cfg =[32,32,64,64,'M',128,128,'M',196,196,'M',256,256]
+            # cfg =[32,32,64,64,'M',128,128,'M',196,196,'M',256,256]
+            cfg =[8,8,16,16,'M',32,32,'M',48,48,'M',64,128]
             # cfg =[32,32,'M',64,64,'M',128,128,'M',256,256]
         self.feature = self.make_layers(cfg, True)
         self.export = export
@@ -45,15 +48,22 @@ class myNet_ocr(nn.Module):
         x=self.newCnn(x)
         # x=self.newBn(x)
         if self.export:
-            conv = x.squeeze(2) # b *512 * width
+            # print(x.shape)
+            # conv = x.squeeze(2) # b *512 * width
+            # conv = x.view(x.size(0), x.size(1), -1)
+            conv = x.reshape(x.size(0), x.size(1), -1)
+            # print(x.shape)
             conv = conv.transpose(2,1)  # [w, b, c]
             # conv =conv.argmax(dim=2)
             return conv
         else:
             b, c, h, w = x.size()
             assert h == 1, "the height of conv must be 1"
-            conv = x.squeeze(2) # b *512 * width
-            conv = conv.permute(2, 0, 1)  # [w, b, c]
+            # conv = x.squeeze(2) # b *512 * width
+            # conv = x.view(x.size(0), x.size(1), -1)
+            conv = x.reshape(x.size(0), x.size(1), -1)
+            # conv = conv.permute(2, 0, 1)  # [w, b, c]
+            conv = conv.transpose(2,1)  # [w, b, c]
             # output = F.log_softmax(self.rnn(conv), dim=2)
             output = torch.softmax(conv, dim=2)
             return output
@@ -126,7 +136,8 @@ class myNet_ocr_color(nn.Module):
     def __init__(self,cfg=None,num_classes=78,export=False,color_num=None):
         super(myNet_ocr_color, self).__init__()
         if cfg is None:
-            cfg =[32,32,64,64,'M',128,128,'M',196,196,'M',256,256]
+            # cfg =[32,32,64,64,'M',128,128,'M',196,196,'M',256,256]
+            cfg =[8,8,16,16,'M',32,32,'M',48,48,'M',64,128]
             # cfg =[32,32,'M',64,64,'M',128,128,'M',256,256]
         self.feature = self.make_layers(cfg, True)
         self.export = export
@@ -187,7 +198,7 @@ class myNet_ocr_color(nn.Module):
             return conv
         else:
             b, c, h, w = x.size()
-            assert h == 1, "the height of conv must be 1"
+            # assert h == 1, "the height of conv must be 1"
             conv = x.squeeze(2) # b *512 * width
             conv = conv.permute(2, 0, 1)  # [w, b, c]
             output = F.log_softmax(conv, dim=2)

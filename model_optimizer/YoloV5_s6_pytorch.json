@@ -1,12 +1,12 @@
 {
     "devtype": "G5",
     "npu_type": "NPU0",
-    "dl_type": 5,
+    "dl_type": 1,
     "model_type": 0,
     "graph_path": "./Sample/user_data/plateNet.py",
-    "weight_path": "./Sample/user_data/plate_rec.onnx",
+    "weight_path": "./Sample/user_data/plate_rec.pth",
     "input_info": {
-        "net_name": "myNet_ocr_color",
+        "net_name": "myNet_ocr",
         "in_info_list": [
             {
                 "input_name": "data",

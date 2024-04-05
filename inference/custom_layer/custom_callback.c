@@ -132,12 +132,13 @@ int Custom_Layer_Reshape(void                       *handle,
     if (0 == strcmp(ld->layer_model->type, "YoloV5_s6_Region"))
     {
         // compute the shape of the out blobs.
+		hr = CUSTOM_YOLOV5_S6_REGION_reshape(handle, ld);
     }
     else
     {
         hr = -1;
     }
-    return 0;
+    return hr;
 }
 
 /**@fn         Custom_Layer_Forward

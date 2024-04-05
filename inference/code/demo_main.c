@@ -63,7 +63,7 @@
 #include "opdevsdk_sche.h"
 
 #include "demo_comm.h"
-#include "demo_alg.h"
+#include "demo_alg_rec.h"
 
 #include "opdevsdk_common_basic.h"
 
@@ -1710,7 +1710,7 @@ int main(int argc, char *argv[])
     int i, ret = 0;
     //printf("main bf\n");
     //system("free");
-	openlog("hik_demo",LOG_CONS,LOG_LOCAL2);
+    openlog("hik_demo",LOG_CONS,LOG_LOCAL2);
 
     ///<the situation:input param
     if (argc != 3)

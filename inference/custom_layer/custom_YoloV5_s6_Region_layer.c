@@ -19,9 +19,13 @@
 #define CUSTOM_YOLOV5_S6_REGION_ALIGN(size)             (((size) + ((128) - 1)) & (~((128) - 1)))
 #define OPC_SIZE_ALIGN(size, align)             ((((int)size) + ((align)-1)) & (~((align)-1)))
 
-static int dim1[4] = {3,3,3,3};
+//static int dim1[4] = {3,3,3,3};
 static int dim2[4] = {0,1,2,3};
-static int dim3[4] = {1,2,3,3};
+//static int dim3[4] = {1,2,3,3};
+
+static int dim1[4] = {0,0,0,0};
+//static int dim2[4] = {0,1,1,1};
+static int dim3[4] = {0,1,2,2};
 static int dim4[4] = {0,1,2,3};
 
 void*   OPC_RUNTIME_set_mem_addr(void* addr);

@@ -30,6 +30,23 @@
 #include "custom_callback.h"
 
 #include "opdevsdk_hikflow_custom.h"
+#include <stddef.h>
+#include <stdint.h>
+
+#define typename(x) _Generic((x),        /* Get the name of a type */             \
+                                                                                  \
+        _Bool: "_Bool",                  unsigned char: "unsigned char",          \
+         char: "char",                     signed char: "signed char",            \
+    short int: "short int",         unsigned short int: "unsigned short int",     \
+          int: "int",                     unsigned int: "unsigned int",           \
+     long int: "long int",           unsigned long int: "unsigned long int",      \
+long long int: "long long int", unsigned long long int: "unsigned long long int", \
+        float: "float",                         double: "double",                 \
+  long double: "long double",                   char *: "pointer to char",        \
+       void *: "pointer to void",                int *: "pointer to int",         \
+      default: "other")
+
+#define fmt "%20s is '%s'\n"
 
 void *g_model_handle = NULL;
 void *g_net_handle   = NULL;
@@ -1003,10 +1020,24 @@ int demo_alg_proc_fromFile()
                                   hkann_out.output_blob[0].shape[1],
                                   hkann_out.output_blob[0].shape[2],
                                   hkann_out.output_blob[0].shape[3]);
+
         for (int c = 0; c < n; c++)
         {
             score = ((float *)(hkann_out.output_blob[0].data))[c]; 
             fprintf(result_fp, "%f\n", score);
+            DEMOPRT("%f\n", score);
+        }
+        for (int c = 0; c < 7; c++)
+        {
+            score = ((float *)(hkann_out.output_blob[1].data))[c]; 
+            DEMOPRT("%f\n", score);
+        }
+
+        for (int c = 0; c < 7; c++)
+        {
+            // DEMOPRT(fmt, "output_blob[1]", typename());
+            // score = ((float *)(hkann_out.output_blob[1].data))[c]; 
+            // fprintf(result_fp, "%f\n", score);
 
         }
         

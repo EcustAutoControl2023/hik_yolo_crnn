@@ -1,0 +1,31 @@
+{
+    "devtype": "G5",
+    "npu_type": "NPU0",
+    "dl_type": 1,
+    "model_type": 0,
+    "graph_path": "./Sample/user_data/plateNet.py",
+    "weight_path": "./Sample/user_data/plate_rec.pth",
+    "input_info": {
+        "net_name": "myNet_ocr",
+        "in_info_list": [
+            {
+                "input_name": "data",
+                "mean_value": [
+                    0
+                ],
+                "scale": [
+                    0.0039215686
+                ],
+                "batch": 1,
+                "channel": 3,
+                "height": 48,
+                "width": 168,
+                "source": "./Sample/ref_image_list_plate.txt"
+            }
+        ]
+    },
+    "input_type": 1,
+    "quantization_mode": 1,
+    "out_path": "./Sample/out",
+    "is_rgb": "yes"
+}

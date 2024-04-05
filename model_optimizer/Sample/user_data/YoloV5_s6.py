@@ -9,7 +9,7 @@ class YoloV5_s6_Region(nn.Module):
     def __init__(self):  # detection layer
         super(YoloV5_s6_Region, self).__init__()
         self.num_anchors = 3
-        self.num_classes = 80
+        self.num_classes = 1
         self.conf_thresh = 0.5
         self.nms_thresh = 0.5
 

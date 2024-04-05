@@ -6,9 +6,13 @@ yolomodel
 tmp/
 tmp_images/
 ref_img_dir/
+origin_ref_img_dir/
+car_ref_img_dir/
+plate_ref_img_dir/
 *.pth
 *.onnx
 *.json_bak
+*.h_bak
 log/
 *.bin
 *.yuv
@@ -21,3 +25,10 @@ tctool/
 hdnc/
 *.prototxt
 *.caffemodel
+*.tar
+*.bgr
+*.so_bak
+*.caffemodel
+*.so
+*.prototxt
+solution_report.txt

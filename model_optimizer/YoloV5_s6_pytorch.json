@@ -3,10 +3,10 @@
     "npu_type": "NPU0",
     "dl_type": 1,
     "model_type": 0,
-    "graph_path": "./Sample/user_data/plateNet.py",
-    "weight_path": "./Sample/user_data/plate_rec.pth",
+    "graph_path": "./Sample/user_data/YoloV5_s6.py",
+    "weight_path": "./Sample/user_data/YoloV5_s6.pth",
     "input_info": {
-        "net_name": "myNet_ocr",
+        "net_name": "YoloV5_s6",
         "in_info_list": [
             {
                 "input_name": "data",
@@ -18,9 +18,9 @@
                 ],
                 "batch": 1,
                 "channel": 3,
-                "height": 48,
-                "width": 168,
-                "source": "./Sample/ref_image_list.txt"
+                "height": 640,
+                "width": 640,
+                "source": "./Sample/ref_image_list_car.txt"
             }
         ]
     },

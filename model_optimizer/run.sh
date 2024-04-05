@@ -5,6 +5,8 @@ export PYTHONPATH=$pwd_path/SourceProject/yolov5-6:$PYTHONPATH
 
 echo "[demo] start running demo model_trans.sh"
 
+echo $1
+echo $2
 
 if [ -z $2 ] || [ $2 != 'auto' ]; then
     # model_trans.sh  $1

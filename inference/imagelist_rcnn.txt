@@ -3,8 +3,8 @@
 ./data/11.bgr
 ./data/12.bgr
 ./data/13.bgr
-./data/14.bgr
-./data/15.bgr
-./data/16.bgr
-./data/17.bgr
-./data/18.bgr
+./data/2.bgr
+./data/3.bgr
+./data/4.bgr
+./data/5.bgr
+./data/6.bgr

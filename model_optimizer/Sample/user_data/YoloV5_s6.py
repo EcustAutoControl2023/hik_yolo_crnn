@@ -258,7 +258,7 @@ class Expand(nn.Module):
         return x.view(b, c // s ** 2, h * s, w * s)  # x(1,16,160,160)
         
 class YoloV5_s6(nn.Module):
-    def __init__(self, cfg='./SourceProject/yolov5-6/models/yolov5s6.yaml', ch=3, nc=None, anchors=None):  # model, input channels, number of classes
+    def __init__(self, cfg='./SourceProject/yolov5-6.0/models/yolov5s6.yaml', ch=3, nc=None, anchors=None):  # model, input channels, number of classes
         super().__init__()
         import yaml
         with open(cfg, errors='ignore') as f:

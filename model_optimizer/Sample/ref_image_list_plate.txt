@@ -1,1 +1,13 @@
-plate_ref_img_dir/plate.jpeg
+plate_ref_img_dir/1.jpg
+plate_ref_img_dir/2.jpg
+plate_ref_img_dir/3.jpg
+plate_ref_img_dir/4.jpg
+plate_ref_img_dir/5.jpg
+plate_ref_img_dir/6.jpg
+plate_ref_img_dir/7.jpg
+plate_ref_img_dir/8.jpg
+plate_ref_img_dir/9.jpg
+plate_ref_img_dir/10.jpg
+plate_ref_img_dir/11.jpg
+plate_ref_img_dir/12.jpg
+plate_ref_img_dir/13.jpg

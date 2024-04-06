@@ -1024,42 +1024,29 @@ int demo_alg_proc_fromFile()
         for (int c = 0; c < n; c++)
         {
             score = ((float *)(hkann_out.output_blob[0].data))[c]; 
-            fprintf(result_fp, "%f\n", score);
-            DEMOPRT("%f\n", score);
-        }
-        for (int c = 0; c < 7; c++)
-        {
-            score = ((float *)(hkann_out.output_blob[1].data))[c]; 
-            DEMOPRT("%f\n", score);
-        }
-
-        for (int c = 0; c < 7; c++)
-        {
-            // DEMOPRT(fmt, "output_blob[1]", typename());
-            // score = ((float *)(hkann_out.output_blob[1].data))[c]; 
             // fprintf(result_fp, "%f\n", score);
-
+            DEMOPRT("%f\n", score);
         }
-        
+
         ///< detection output
         DEMOPRT("----------------------------------------------------------------\n");
-        DEMOPRT("this is detection output \n    the out format is class,score,x,y,width,height,batch_index\n");
+        DEMOPRT("this is detection output \n    the out format need to be verified\n");
         DEMOPRT("if the model is not detection,or the out format is different,\n    please change it \n");
         DEMOPRT("----------------------------------------------------------------\n");
-        int detectnum = hkann_out.output_blob[0].shape[0];
-        for(i = 0; i < detectnum; i++)
-        {
-            box_info = (OUTPUT_BOX_INFO*)hkann_out.output_blob[0].data;
-            box_info = box_info + i;
-            DEMOPRT("current bounding box: %d\n", i);
-            DEMOPRT("classs  = %f\n", box_info->class_type);
-            DEMOPRT("score   = %f\n", box_info->score);
-            DEMOPRT("x       = %f\n", box_info->bbox.x);
-            DEMOPRT("y       = %f\n", box_info->bbox.y);
-            DEMOPRT("w       = %f\n", box_info->bbox.w);
-            DEMOPRT("h       = %f\n", box_info->bbox.h);
-            DEMOPRT("batch   = %f\n", box_info->batch_idx);
-        }
+        // int detectnum = hkann_out.output_blob[0].shape[0];
+        // for(i = 0; i < detectnum; i++)
+        // {
+        //     box_info = (OUTPUT_BOX_INFO*)hkann_out.output_blob[0].data;
+        //     box_info = box_info + i;
+        //     DEMOPRT("current bounding box: %d\n", i);
+        //     DEMOPRT("classs  = %f\n", box_info->class_type);
+        //     DEMOPRT("score   = %f\n", box_info->score);
+        //     DEMOPRT("x       = %f\n", box_info->bbox.x);
+        //     DEMOPRT("y       = %f\n", box_info->bbox.y);
+        //     DEMOPRT("w       = %f\n", box_info->bbox.w);
+        //     DEMOPRT("h       = %f\n", box_info->bbox.h);
+        //     DEMOPRT("batch   = %f\n", box_info->batch_idx);
+        // }
         DEMOPRT("----------------------------------------------------------------\n");
         if (NULL != result_fp)
         {

@@ -1,0 +1,86 @@
+PATH += :/opt/arm/arm-ca9-linux-gnueabihf-6.5/bin
+LD_LIBRARY_PATH += :/opt/arm/arm-ca9-linux-gnueabihf-6.5/lib/
+#DEBUG_BUILD ?= yes
+CROSS_COMPILE := arm-ca9-linux-gnueabihf-
+CC = $(CROSS_COMPILE)gcc
+CPP = $(CROSS_COMPILE)g++
+
+#测试模块
+TEST_MODULE = custom_layer/rcnn
+
+#-----------------------------------[ conf ]------------------------------------------------------------------------
+ROOT_DIR = ../G5
+LIB_DIR = $(ROOT_DIR)/lib
+SRC_DIR  = ..
+LDFLAGS = -L$(LIB_DIR)/opdevsdk -lbsc
+LDFLAGS += -L$(LIB_DIR)/hikflow -lhal_bsp
+LDFLAGS += -Wl,-rpath=../G5/lib/hikflow:../G5/lib/opdevsdk
+LDFLAGS += -L/heop/lib/
+
+#-----------------------------------[ src path ]------------------------------------------------------------------------
+INC_DIR += -I$(ROOT_DIR)/inc
+INC_DIR += -I$(SRC_DIR)/code
+INC_DIR += -I$(SRC_DIR)/custom_layer
+INC_DIR += -I$(ROOT_DIR)/3rdparty/sdk_9852x_c/include
+
+#hikflow相关
+INC_DIR += -I$(ROOT_DIR)/inc/hikflow
+INC_DIR += -I$(ROOT_DIR)/inc/opdevsdk
+INC_DIR += -I$(ROOT_DIR)/inc/scheduler
+INC_DIR += -I$(SRC_DIR)/$(TEST_MODULE)
+
+SOURCES  = $(wildcard $(SRC_DIR)/code/*.c)
+SOURCES += $(wildcard $(SRC_DIR)/code/rcnn/*.c)
+SOURCES += $(wildcard $(SRC_DIR)/$(TEST_MODULE)/*.c)
+CPP_SOURCES = $(wildcard $(SRC_DIR)/$(TEST_MODULE)/*.cpp)
+OBJECTS  = $(notdir $(patsubst %.c,%.o,$(SOURCES)))
+CPP_OBJECTS =  $(notdir $(patsubst %.cpp,%.o,$(CPP_SOURCES)))
+
+
+#opc生成�?.o文件
+OBJS_ALL = $(OBJECTS)
+OBJS_ALL += $(CPP_OBJECTS)
+OBJS_ALL += $(wildcard $(SRC_DIR)/$(TEST_MODULE)/*.o)
+
+#-----------------------------------[ lib path ]------------------------------------------------------------------------
+LIBS = $(ROOT_DIR)/lib/hikflow/libhikflow.a
+LIBS += $(ROOT_DIR)/lib/hikflow/libscheduler.a
+
+#LIBS += $(ROOT_DIR)/3rdparty/sdk_9852x_c/libhdal.a
+
+#-----------------------------------[ compile option ]------------------------------------------------------------------
+CFLAGS = -D__LINUX -DNT_CNN_ARM_CODE -DNT_CNN_LINUX -DVIDEO_UNINIT -DNT_CNN_HW_9852x -DNT_CNN_HW -DPLATFORM_INFO=3
+CFLAGS += $(INC_DIR) -fPIC -ffunction-sections -fdata-sections 
+CFLAGS += -Wall -Wno-unused-function -Wno-unused-variable -Wno-unused-but-set-variable
+CFLAGS += -lstdc++ -ldl
+ifeq ($(DEBUG_BUILD), yes)
+	CFLAGS += -g
+else
+	CFLAGS += -O2
+endif
+#-----------------------------------[ all ]-----------------------------------------------------------------------------
+
+TARGET = ../rcnnmodel
+
+
+all : $(TARGET)
+
+$(TARGET): $(OBJS_ALL)
+	$(CC) $(CFLAGS) -o $@ $(OBJS_ALL) $(LDFLAGS) $(LIBS) -lpthread -lm -lrt -lnanomsg -lopdevsdk -lcurl -lssl -lcrypto -lcjson
+	@echo 
+	@if [ "$(DEBUG_BUILD)" = "yes" ]; then echo "###########################################"; fi
+	@if [ "$(DEBUG_BUILD)" = "yes" ]; then echo "################ Debug Build ##############"; fi
+	@if [ "$(DEBUG_BUILD)" = "yes" ]; then echo "###########################################"; fi
+	@echo "================ build demo success ================"
+	@echo 
+	@chmod -R 777 $(TARGET)
+	@-rm -f $(OBJECTS)
+	@-rm -f *.o
+
+$(OBJECTS): $(SOURCES)
+	$(CC) $(CFLAGS) -c $^
+$(CPP_OBJECTS): $(CPP_SOURCES)
+	$(CPP) $(CFLAGS) -c $^
+
+clean:
+	-rm -f $(OBJECTS) $(TARGET)

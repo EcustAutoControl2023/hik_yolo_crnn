@@ -2,7 +2,7 @@ import torch.nn as nn
 from torch.nn import functional as F
 import torch
 
-from model_checker import ModelChecker
+# from model_checker import ModelChecker
 
 class myNet_ocr(nn.Module):
     def __init__(self,cfg=None,num_classes=78,export=False):
@@ -208,7 +208,14 @@ class myNet_ocr_color(nn.Module):
 
 
 if __name__ == '__main__':
-    x = torch.randn(1,3,48,216)
+    x = torch.randn(1,3,48,168)
     model = myNet_ocr(num_classes=78,export=True)
     out = model(x)
     print(out.shape)
+    preds=torch.softmax(out,dim=-1)
+    print(preds.shape)
+    prob,index=preds.max(dim=-1)
+    print(index.shape)
+    print(prob.shape)
+    index = index.view(-1).detach().cpu().numpy()
+    prob=prob.view(-1).detach().cpu().numpy()

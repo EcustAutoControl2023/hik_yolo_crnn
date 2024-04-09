@@ -32,6 +32,9 @@
 #include "opdevsdk_hikflow_custom.h"
 #include <stddef.h>
 #include <stdint.h>
+#include <math.h>
+
+#include "plate_rec.h"
 
 #define typename(x) _Generic((x),        /* Get the name of a type */             \
                                                                                   \
@@ -1021,12 +1024,36 @@ int demo_alg_proc_fromFile()
                                   hkann_out.output_blob[0].shape[2],
                                   hkann_out.output_blob[0].shape[3]);
 
-        for (int c = 0; c < n; c++)
+        // for (int column; column < 78; column++) {
+        //     for (int row; row < 21; row++) {
+        //         score = ((float *)(hkann_out.output_blob[0].data))[c]; 
+        //     }
+        // }
+        float **arr = NULL;
+        arr = (float **)malloc(21 * sizeof(float *));
+        for (int i = 0; i < 21; i++)
+            arr[i] = (float *)malloc(78 * sizeof(float));
+
+        parseRawData((float *)hkann_out.output_blob[0].data, 78*21, &arr);
+
+        char *ccc = parsePlateName(arr, 21);
+        for (int i = 0; i < 21; i++)
         {
-            score = ((float *)(hkann_out.output_blob[0].data))[c]; 
-            // fprintf(result_fp, "%f\n", score);
-            DEMOPRT("%f\n", score);
+            if (arr[i] != NULL)
+                free(arr[i]);
         }
+        if (arr != NULL)
+            free(arr);
+        DEMOPRT("车牌号为：%s\n", ccc);
+
+        free(ccc);
+
+        // for (int c = 0; c < n; c++)
+        // {
+        //     score = ((float *)(hkann_out.output_blob[0].data))[c]; 
+        //     // fprintf(result_fp, "%f\n", score);
+        //     DEMOPRT("%f\n", score);
+        // }
 
         ///< detection output
         DEMOPRT("----------------------------------------------------------------\n");

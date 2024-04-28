@@ -26,6 +26,7 @@ INC_DIR += -I$(ROOT_DIR)/3rdparty/sdk_9852x_c/include
 #hikflow相关
 INC_DIR += -I$(ROOT_DIR)/inc/hikflow
 INC_DIR += -I$(ROOT_DIR)/inc/opdevsdk
+INC_DIR += -I$(ROOT_DIR)/inc/opencv
 INC_DIR += -I$(ROOT_DIR)/inc/scheduler
 INC_DIR += -I$(SRC_DIR)/$(TEST_MODULE)
 
@@ -44,6 +45,9 @@ OBJS_ALL += $(wildcard $(SRC_DIR)/$(TEST_MODULE)/*.o)
 #-----------------------------------[ lib path ]------------------------------------------------------------------------
 LIBS = $(ROOT_DIR)/lib/hikflow/libhikflow.a
 LIBS += $(ROOT_DIR)/lib/hikflow/libscheduler.a
+LIBS += $(ROOT_DIR)/lib/opencv/libopencv_core.so
+LIBS += $(ROOT_DIR)/lib/opencv/libopencv_imgcodecs.so
+LIBS += $(ROOT_DIR)/lib/opencv/libopencv_imgproc.so
 
 #LIBS += $(ROOT_DIR)/3rdparty/sdk_9852x_c/libhdal.a
 

@@ -47,10 +47,10 @@ static int alloc_memory_vca(OPDEVSDK_HKA_MEM_TAB_ST *mem_tab)
         case OPDEVSDK_HKA_MEM_SPACE_NOCACHED:                ///< mmz without cache
         case OPDEVSDK_HKA_MEM_SPACE_NOCACHED_PRIOPITY:
         {
-            ret = opdevsdk_mem_allocNocache((void *)&u64PhyAddr, (void **)&ppVirAddr, (const char *)"mm_no_cache", align_size);
+            ret = opdevsdk_mem_allocNocache((void **)&u64PhyAddr, (void **)&ppVirAddr, (const char *)"mm_no_cache", align_size);
             if (0 != ret)
             {
-                DEMOPRT("error: alloc_memory  allocNocache failed\n");
+                DEMOPRT((char*)"error: alloc_memory  allocNocache failed\n");
                 return -2;
             }
 
@@ -80,10 +80,10 @@ static int alloc_memory_vca(OPDEVSDK_HKA_MEM_TAB_ST *mem_tab)
         case OPDEVSDK_HKA_MEM_SPACE_CACHED: ///< mmz with cache
         case OPDEVSDK_HKA_MEM_SPACE_CACHED_PRIOPITY: ///< mmz with cache
         {
-            ret = opdevsdk_mem_allocCache((void *)&u64PhyAddr, (void **)&ppVirAddr, (const char *)"mm_with_cache", align_size);
+            ret = opdevsdk_mem_allocCache((void **)&u64PhyAddr, (void **)&ppVirAddr, (const char *)"mm_with_cache", align_size);
             if (0 != ret)
             {
-                DEMOPRT("alloc_memory  CACHED_MEM failed\n");
+                DEMOPRT((char*)"alloc_memory  CACHED_MEM failed\n");
                 return -3;
             }
 
@@ -112,10 +112,10 @@ static int alloc_memory_vca(OPDEVSDK_HKA_MEM_TAB_ST *mem_tab)
         
         case OPDEVSDK_HKA_MEM_SPACE_CPU:
         {
-			ret = opdevsdk_mem_allocCache((void *)&u64PhyAddr, (void **)&ppVirAddr, (const char *)"mm_with_cache", align_size);
+			ret = opdevsdk_mem_allocCache((void **)&u64PhyAddr, (void **)&ppVirAddr, (const char *)"mm_with_cache", align_size);
             if (0 != ret)
             {
-                DEMOPRT("alloc_memory  ARM_MEM failed\n");
+                DEMOPRT((char*)"alloc_memory  ARM_MEM failed\n");
                 return -3;
             }
 
@@ -174,7 +174,7 @@ int opdevsdk_hikflow_Device_Alloc_Memtab(OPDEVSDK_HKA_MEM_TAB_ST *mem_tab, int n
             mem_tab[i].phy_base = NULL;
             mem_tab[i].base = NULL;
         }
-        DEMOPRT("tab: %d, memsize: %f , space %d.\n", i, mem_tab[i].size / 1024.0 / 1024.0, mem_tab[i].space);
+        DEMOPRT((char*)"tab: %d, memsize: %f , space %d.\n", i, mem_tab[i].size / 1024.0 / 1024.0, mem_tab[i].space);
     }
 
     return 0;
@@ -206,7 +206,7 @@ static int free_memory_vca(OPDEVSDK_HKA_MEM_TAB_ST *mem_tab)
         case OPDEVSDK_HKA_MEM_SPACE_CACHED_PRIOPITY:
         case OPDEVSDK_HKA_MEM_SPACE_NOCACHED_PRIOPITY:
         {
-            //DEMOPRT("mem_tab->space = %d\n", mem_tab->space);
+            //DEMOPRT((char*)"mem_tab->space = %d\n", mem_tab->space);
             if (mem_tab->phy_base)
             {
                 if (mem_tab->alignment > 1)                       ///< free aligned memory block
@@ -215,12 +215,12 @@ static int free_memory_vca(OPDEVSDK_HKA_MEM_TAB_ST *mem_tab)
                 }
                 if (ret != 0)
                 {
-                    DEMOPRT("free_memory_vca failed!\n");
+                    DEMOPRT((char*)"free_memory_vca failed!\n");
                 }
 
                 mem_tab->phy_base = NULL;
                 mem_tab->base     = NULL;
-                DEMOPRT("free_memory_vca OK!\n");
+                DEMOPRT((char*)"free_memory_vca OK!\n");
                 return 0;
             }
             return -2;
@@ -237,12 +237,12 @@ static int free_memory_vca(OPDEVSDK_HKA_MEM_TAB_ST *mem_tab)
 			   }
 			   if (ret != 0)
 			   {
-				   DEMOPRT("free_memory_vca failed!\n");
+				   DEMOPRT((char*)"free_memory_vca failed!\n");
 			   }
 
 			   mem_tab->phy_base = NULL;
 			   mem_tab->base	 = NULL;
-			   DEMOPRT("free_memory_vca OK!\n");
+			   DEMOPRT((char*)"free_memory_vca OK!\n");
 			   return 0;
 			}
 

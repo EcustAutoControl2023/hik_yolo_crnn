@@ -30,8 +30,8 @@ void demo_syslog_print(char *format, ...);
 * @brief demo common function
 */
 #define DEMOPRT 									 demo_syslog_print
-#define DEMO_CHECK_RET(c, r)                         if(c){DEMOPRT("DEMO_ASSERT_RET FAILED!\n"); return r;}
-#define DEMO_CHECK_RET_EX(c)                         if(c){DEMOPRT("DEMO_ASSERT_RET FAILED!\n"); return;}
+#define DEMO_CHECK_RET(c, r)                         if(c){DEMOPRT((char*)"DEMO_ASSERT_RET FAILED!\n"); return r;}
+#define DEMO_CHECK_RET_EX(c)                         if(c){DEMOPRT((char*)"DEMO_ASSERT_RET FAILED!\n"); return;}
 
 
 /**

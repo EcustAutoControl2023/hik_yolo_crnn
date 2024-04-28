@@ -158,13 +158,13 @@ static void demo_signal_clean()
 
     sleep(1);
     
-    DEMOPRT(" demo_signal_clean........start !\n");
+    DEMOPRT((char*)" demo_signal_clean........start !\n");
 
     //异常崩溃时，需要释放opdevsdk_hikflow_Release和opdevsdk_hikflow_ReleaseModel
     //当前两次销毁算法资源，底层会触发崩溃，暂时屏蔽算法销毁
     demo_alg_deinit();
     demo_alg_releaseBuffer();
-    DEMOPRT("demo_alg_deinit\n");
+    DEMOPRT((char*)"demo_alg_deinit\n");
 
     if(bsche_init)
     {
@@ -181,43 +181,43 @@ static void demo_signal_clean()
     if(img1_frame.timeStamp)
     {
         opdevsdk_mscale_releaseFrame(mscale_hdl, &img1_frame);
-        // DEMOPRT("releaseFrame img1_frame frmNum %d ts %d\n", img1_frame.frmNum, (int)(img1_frame.timeStamp / 1000));
+        // DEMOPRT((char*)"releaseFrame img1_frame frmNum %d ts %d\n", img1_frame.frmNum, (int)(img1_frame.timeStamp / 1000));
     }
     if(img2_frame.timeStamp)
     {
         opdevsdk_mscale_releaseFrame(mscale_hdl, &img2_frame);
-        // DEMOPRT("releaseFrame img2_frame frmNum %d ts %d\n", img2_frame.frmNum, (int)(img2_frame.timeStamp / 1000));
+        // DEMOPRT((char*)"releaseFrame img2_frame frmNum %d ts %d\n", img2_frame.frmNum, (int)(img2_frame.timeStamp / 1000));
     }
     if(vin_frame.timeStamp)
     {
         opdevsdk_vin_releaseFrame(chan, &vin_frame);
-        // DEMOPRT("releaseFrame vin_frame frmNum %d ts %d\n", vin_frame.frmNum, (int)(vin_frame.timeStamp / 1000));
+        // DEMOPRT((char*)"releaseFrame vin_frame frmNum %d ts %d\n", vin_frame.frmNum, (int)(vin_frame.timeStamp / 1000));
     }
 
     if(mscale_hdl)
     {
         opdevsdk_mscale_stop(mscale_hdl);
-        // DEMOPRT("opdevsdk_mscale_stop!\n");
+        // DEMOPRT((char*)"opdevsdk_mscale_stop!\n");
 
         opdevsdk_mscale_unbindVbPoolGrp(mscale_hdl);
-        // DEMOPRT("opdevsdk_mscale_unbindVbPoolGrp groupId %d mscale_hdl %p!\n", groupId, mscale_hdl);
+        // DEMOPRT((char*)"opdevsdk_mscale_unbindVbPoolGrp groupId %d mscale_hdl %p!\n", groupId, mscale_hdl);
 
         opdevsdk_mscale_destroy(mscale_hdl);
-        // DEMOPRT("opdevsdk_mscale_destroy mscale_hdl %p!\n", mscale_hdl);
+        // DEMOPRT((char*)"opdevsdk_mscale_destroy mscale_hdl %p!\n", mscale_hdl);
         mscale_hdl = NULL;
     }
 
     if(-1!=groupId)
     {
         opdevsdk_mem_destroyVbPoolGrp(groupId);
-        // DEMOPRT("opdevsdk_mem_destroyVbPoolGrp groupId %d!\n", groupId);
+        // DEMOPRT((char*)"opdevsdk_mem_destroyVbPoolGrp groupId %d!\n", groupId);
         groupId = -1;
     }
 
     if(bvin_init)
     {
         opdevsdk_vin_deinit(chan);
-        // DEMOPRT("opdevsdk_vin_deinit chan %d!\n", chan);
+        // DEMOPRT((char*)"opdevsdk_vin_deinit chan %d!\n", chan);
         bvin_init = OP_FALSE;
     }
 
@@ -225,10 +225,10 @@ static void demo_signal_clean()
     if(bsys_init)
     {
         opdevsdk_sys_deinit();
-        // DEMOPRT("opdevsdk_sys_deinit !\n");
+        // DEMOPRT((char*)"opdevsdk_sys_deinit !\n");
         bsys_init = OP_FALSE;
     }
-    // DEMOPRT(" demo_signal_clean........end !\n");
+    // DEMOPRT((char*)" demo_signal_clean........end !\n");
 }
 /** 
 * @brief            the function of signal acquisition
@@ -240,14 +240,14 @@ static void demo_signal_clean()
 */
 static void demo_signal_call_back()
 {
-    // DEMOPRT("\n demo_main Deinit........Yes!\n");
+    // DEMOPRT((char*)"\n demo_main Deinit........Yes!\n");
 
     demo_signal_clean();
-    // DEMOPRT(" demo_signal_clean!\n");
+    // DEMOPRT((char*)" demo_signal_clean!\n");
 
     //kill the process
     system("killall opdevsdkDemo");
-    // DEMOPRT("killall opdevsdkDemo");
+    // DEMOPRT((char*)"killall opdevsdkDemo");
 
     //exit
     exit(1);
@@ -312,7 +312,7 @@ static int demo_img_copy(OPDEVSDK_VIDEO_FRAME_ST *yuvSrc,OPDEVSDK_VIDEO_FRAME_ST
     ret = opdevsdk_img_scale(yuvSrc,yuvDst,scale);
     if(ret != OPDEVSDK_S_OK)
     {
-        DEMOPRT("opdevsdk_imageScale eror ret = 0x%x\n",ret);
+        DEMOPRT((char*)"opdevsdk_imageScale eror ret = 0x%x\n",ret);
         return ret;
     }
     return OPDEVSDK_S_OK;
@@ -335,7 +335,7 @@ static int demo_put_yuv_frame(OPDEVSDK_VIDEO_FRAME_INFO_ST *frm)
     if(input_width != frm->yuvFrame.width || input_height != frm->yuvFrame.height)
     {
         alg_lost_times++;
-        /* DEMOPRT("input_width %d input_height %d yuvFrame w %d h %d err\n", \
+        /* DEMOPRT((char*)"input_width %d input_height %d yuvFrame w %d h %d err\n", \
              input_width, input_height, frm->yuvFrame.width, frm->yuvFrame.height); */
         return 0;
     }
@@ -345,7 +345,7 @@ static int demo_put_yuv_frame(OPDEVSDK_VIDEO_FRAME_INFO_ST *frm)
     if(free_buf < 1)
     {
         alg_lost_times++;
-        DEMOPRT("[ERR].alg_buf no free buf, r %d, w %d, max %d.\n", alg_buf.buf_r, alg_buf.buf_w, DEMO_MAX_ALG_BUF_COUNT);
+        DEMOPRT((char*)"[ERR].alg_buf no free buf, r %d, w %d, max %d.\n", alg_buf.buf_r, alg_buf.buf_w, DEMO_MAX_ALG_BUF_COUNT);
         return 0;
     }
 
@@ -363,7 +363,7 @@ static int demo_put_yuv_frame(OPDEVSDK_VIDEO_FRAME_INFO_ST *frm)
     yuvDst->frmNum = pfrm->frmNum;
     memcpy(&yuvDst->dateTime, &pfrm->dateTime, sizeof(OPDEVSDK_MEDIADRV_TIME_ST));
 #if 0
-    DEMOPRT("pfrm format %d width %d height %d pitch %d %d %d, pvir %p %p %p, pphy %p %p %p\n",
+    DEMOPRT((char*)"pfrm format %d width %d height %d pitch %d %d %d, pvir %p %p %p, pphy %p %p %p\n",
         pfrm->yuvFrame.dataFormat, pfrm->yuvFrame.width, pfrm->yuvFrame.height, pfrm->yuvFrame.pitch[0],
         pfrm->yuvFrame.pitch[1], pfrm->yuvFrame.pitch[2], pfrm->yuvFrame.pVirAddr[0], pfrm->yuvFrame.pVirAddr[1],
         pfrm->yuvFrame.pVirAddr[2], pfrm->yuvFrame.pPhyAddr[0], pfrm->yuvFrame.pPhyAddr[1], pfrm->yuvFrame.pPhyAddr[2]);
@@ -371,7 +371,7 @@ static int demo_put_yuv_frame(OPDEVSDK_VIDEO_FRAME_INFO_ST *frm)
     ret = demo_img_copy(&pfrm->yuvFrame,&yuvDst->yuvFrame);
     if(ret != OPDEVSDK_S_OK)
     {
-        DEMOPRT("demo_img_copy error  ret = 0x%x\n",ret);
+        DEMOPRT((char*)"demo_img_copy error  ret = 0x%x\n",ret);
         return 0;
     }
 
@@ -403,7 +403,7 @@ static int demo_video_get_thread()
     opdevsdk_sys_getAbility(&abili);
     if(abili.vinAbili.chnNum < 1)
     {
-        // DEMOPRT("vinAbili.chnNum %d err\n", abili.vinAbili.chnNum);
+        // DEMOPRT((char*)"vinAbili.chnNum %d err\n", abili.vinAbili.chnNum);
         return -1;
     }
     int chan = abili.vinAbili.chnInfo[0].chan;
@@ -420,16 +420,16 @@ static int demo_video_get_thread()
         ret = opdevsdk_vin_getFrame(chan, &vin_frame, -1);
         if(ret != OPDEVSDK_S_OK)
         {
-            DEMOPRT("opdevsdk_vin_getFrame error ret = 0x%x\n",ret);
+            DEMOPRT((char*)"opdevsdk_vin_getFrame error ret = 0x%x\n",ret);
             //return -1;
         }
-        // DEMOPRT("opdevsdk_vin_getFrame chan %d frm num %d ts %llu\n",vin_frame.chan, vin_frame.frmNum, vin_frame.timeStamp);
+        // DEMOPRT((char*)"opdevsdk_vin_getFrame chan %d frm num %d ts %llu\n",vin_frame.chan, vin_frame.frmNum, vin_frame.timeStamp);
 
         //put yuv       
         ret = demo_put_yuv_frame(&vin_frame);
         if(ret != OPDEVSDK_S_OK)
         {
-            DEMOPRT("demo_put_yuv_frame  ret = 0x%x\n",ret);
+            DEMOPRT((char*)"demo_put_yuv_frame  ret = 0x%x\n",ret);
         }
 
         gettimeofday(&tv, NULL);
@@ -438,20 +438,20 @@ static int demo_video_get_thread()
         total += (end - start);
         frm_num += 1;
         avg = total / frm_num;
-        // DEMOPRT("getFrame interval %dms avg %dms\n", end - start, avg);
+        // DEMOPRT((char*)"getFrame interval %dms avg %dms\n", end - start, avg);
         
         ret = opdevsdk_vin_releaseFrame(chan, &vin_frame);
         if(ret != OPDEVSDK_S_OK)
         {
-            DEMOPRT("opdevsdk_vin_releaseFrame error ret = 0x%x\n",ret);
+            DEMOPRT((char*)"opdevsdk_vin_releaseFrame error ret = 0x%x\n",ret);
             //return -1;
         }
-        // DEMOPRT("opdevsdk_vin_releaseFrame chan %d ts %llu\n",vin_frame.chan, vin_frame.timeStamp);
+        // DEMOPRT((char*)"opdevsdk_vin_releaseFrame chan %d ts %llu\n",vin_frame.chan, vin_frame.timeStamp);
         memset(&vin_frame, 0, sizeof(OPDEVSDK_VIDEO_FRAME_INFO_ST));
-        //DEMOPRT("MediaSdk_getNewFrame vl %p pl %p vc %p pc %p num %d lost cnt %d\n",
+        //DEMOPRT((char*)"MediaSdk_getNewFrame vl %p pl %p vc %p pc %p num %d lost cnt %d\n",
         //frm.yuvFrame.pVirAddr[0],frm.yuvFrame.pPhyAddr[0],frm.yuvFrame.pVirAddr[1],frm.yuvFrame.pPhyAddr[1],frm.frmNum,lost_cnt);
     }
-    // DEMOPRT("###### demo_video_get_thread exit thread_flg %d \n", thread_flg);
+    // DEMOPRT((char*)"###### demo_video_get_thread exit thread_flg %d \n", thread_flg);
 
     return ret;
 }
@@ -478,7 +478,7 @@ static int32_t GetMethodIsapiRetContent(char* url, OP_DEVSDK_MIME_UNIT_ST *in_bu
 		NULL == buf ||
 		0 == bufLen)
 	{
-		opdevsdk_write_log(OPDEVSDK_LOG_ERROR, "[GetMethodIsapiRetContent] input param err!\n");
+		opdevsdk_write_log(OPDEVSDK_LOG_ERROR, (char*)"[GetMethodIsapiRetContent] input param err!\n");
 		return ERROR;
 	}
 	
@@ -491,7 +491,7 @@ static int32_t GetMethodIsapiRetContent(char* url, OP_DEVSDK_MIME_UNIT_ST *in_bu
 	out_data = (POP_DEVSDK_MIME_UNIT_ST)malloc(1 * sizeof(OP_DEVSDK_MIME_UNIT_ST));
 	if(NULL == out_data)
 	{
-		opdevsdk_write_log(OPDEVSDK_LOG_ERROR ,"[GetMethodIsapiRetContent] malloc fail!\n");
+		opdevsdk_write_log(OPDEVSDK_LOG_ERROR ,(char*)"[GetMethodIsapiRetContent] malloc fail!\n");
 		ret = ERROR;
 		goto EXIT1;
 	}
@@ -504,15 +504,15 @@ static int32_t GetMethodIsapiRetContent(char* url, OP_DEVSDK_MIME_UNIT_ST *in_bu
 
 	if(0 != opdevsdk_dataTrans_sendDataShort(&stIntput,&stOutput))
 	{
-		opdevsdk_write_log(OPDEVSDK_LOG_ERROR,"[GetMethodIsapiRetContent] opdevsdk_dataTrans_sendDataShort exec fail!\n");
+		opdevsdk_write_log(OPDEVSDK_LOG_ERROR, (char*)"[GetMethodIsapiRetContent] opdevsdk_dataTrans_sendDataShort exec fail!\n");
 		ret = ERROR;
 		goto EXIT2;
 	}
  
- 	opdevsdk_write_log(OPDEVSDK_LOG_DEBUG, "out_data->returned_size:%d\n", out_data->returned_size);
-	opdevsdk_write_log(OPDEVSDK_LOG_DEBUG, "out_data->content_len:%d\n", out_data->content_len);
-	opdevsdk_write_log(OPDEVSDK_LOG_DEBUG, "stOutput.returned_buffer_num:%d\n", stOutput.returned_buffer_num);
-    opdevsdk_write_log(OPDEVSDK_LOG_DEBUG, "out_data->p_content:\n%s\n", out_data->p_content);
+ 	opdevsdk_write_log(OPDEVSDK_LOG_DEBUG, (char*)"out_data->returned_size:%d\n", out_data->returned_size);
+	opdevsdk_write_log(OPDEVSDK_LOG_DEBUG, (char*)"out_data->content_len:%d\n", out_data->content_len);
+	opdevsdk_write_log(OPDEVSDK_LOG_DEBUG, (char*)"stOutput.returned_buffer_num:%d\n", stOutput.returned_buffer_num);
+        opdevsdk_write_log(OPDEVSDK_LOG_DEBUG, (char*)"out_data->p_content:\n%s\n", out_data->p_content);
 
 	p_mime_st = (POP_DEVSDK_MIME_UNIT_ST)(stOutput.p_out_buffer);
 
@@ -524,7 +524,7 @@ static int32_t GetMethodIsapiRetContent(char* url, OP_DEVSDK_MIME_UNIT_ST *in_bu
 	}
 	else
 	{
-		opdevsdk_write_log(OPDEVSDK_LOG_ERROR ,"[GetMethodIsapiRetContent] p_mime_st param err!\n");
+		opdevsdk_write_log(OPDEVSDK_LOG_ERROR , (char*)"[GetMethodIsapiRetContent] p_mime_st param err!\n");
 		ret = ERROR;
 	}
 EXIT2:
@@ -558,14 +558,14 @@ static int demo_init_socket_server()
 
     in_data.p_content = NULL; 
 
-	ret = GetMethodIsapiRetContent("GET /ISAPI/HEOP/System/capabilities?format=json", &in_data, recv_buf, sizeof(recv_buf));
+	ret = GetMethodIsapiRetContent((char*)"GET /ISAPI/HEOP/System/capabilities?format=json", &in_data, recv_buf, sizeof(recv_buf));
 	if(ERROR == ret)
     {
-        opdevsdk_write_log(OPDEVSDK_LOG_ERROR, "GetMethodIsapiRetContent error!\n");
+        opdevsdk_write_log(OPDEVSDK_LOG_ERROR, (char*)"GetMethodIsapiRetContent error!\n");
         return ret;
     }
 
-	opdevsdk_write_log(OPDEVSDK_LOG_DEBUG, "[Listen] get cap: %s\n", recv_buf);
+	opdevsdk_write_log(OPDEVSDK_LOG_DEBUG, (char*)"[Listen] get cap: %s\n", recv_buf);
 
 	/* 2. register a listen port */
 	memset(&in_data, 0, sizeof(in_data));
@@ -577,14 +577,14 @@ static int demo_init_socket_server()
     in_data.p_content = buf_json;
     in_data.content_len = in_buf_len;
 
-    ret = GetMethodIsapiRetContent("PUT /ISAPI/HEOP/System/APP/portMap?format=json", &in_data, recv_buf, sizeof(recv_buf));
+    ret = GetMethodIsapiRetContent((char*)"PUT /ISAPI/HEOP/System/APP/portMap?format=json", &in_data, recv_buf, sizeof(recv_buf));
     if(ERROR == ret)
     {
-        opdevsdk_write_log(OPDEVSDK_LOG_ERROR, "GetMethodIsapiRetContent error!\n");
+        opdevsdk_write_log(OPDEVSDK_LOG_ERROR, (char*)"GetMethodIsapiRetContent error!\n");
         return ret;
     }
 
-	opdevsdk_write_log(OPDEVSDK_LOG_DEBUG, "[Listen] register port: %s\n", recv_buf);
+	opdevsdk_write_log(OPDEVSDK_LOG_DEBUG, (char*)"[Listen] register port: %s\n", recv_buf);
 	sleep(1);
 
 	/* 3. get port info */
@@ -592,14 +592,14 @@ static int demo_init_socket_server()
 	memset(recv_buf, 0, sizeof(recv_buf));
 	in_data.p_content = NULL;
 
-	ret = GetMethodIsapiRetContent("GET /ISAPI/HEOP/System/APP/portMapInfo?format=json", &in_data, recv_buf, sizeof(recv_buf));
+	ret = GetMethodIsapiRetContent((char*)"GET /ISAPI/HEOP/System/APP/portMapInfo?format=json", &in_data, recv_buf, sizeof(recv_buf));
 	if(ERROR == ret)
     {
-        opdevsdk_write_log(OPDEVSDK_LOG_ERROR, "GetMethodIsapiRetContent error!\n");
+        opdevsdk_write_log(OPDEVSDK_LOG_ERROR, (char*)"GetMethodIsapiRetContent error!\n");
         return ret;
     }
 
-	opdevsdk_write_log(OPDEVSDK_LOG_DEBUG, "[Listen] get port info: %s\n", recv_buf);
+	opdevsdk_write_log(OPDEVSDK_LOG_DEBUG, (char*)"[Listen] get port info: %s\n", recv_buf);
     return 1;
 }
 
@@ -624,7 +624,7 @@ static int demo_init_test()
     ret = opdevsdk_sys_init(); ///< G5
     if(ret != OPDEVSDK_S_OK)
     {
-        DEMOPRT("opdevsdk_init eror ret = 0x%x\n",ret);
+        DEMOPRT((char*)"opdevsdk_init eror ret = 0x%x\n",ret);
         return ret;
     }
 
@@ -634,13 +634,13 @@ static int demo_init_test()
     opdevsdk_sys_getAbility(&abili);
 
     //printf the abilities,mmz缓存大小在申请时由内核限制,基础库不限制,默认置0
-    /* DEMOPRT("opdevsdk_init mmSize %dKB cacheSize %dKB noCacheSize %dKB, jpegEncAbili %d jpegDecAbili %d scaleAbili %d\n", \
+    /* DEMOPRT((char*)"opdevsdk_init mmSize %dKB cacheSize %dKB noCacheSize %dKB, jpegEncAbili %d jpegDecAbili %d scaleAbili %d\n", \
         abili.mmSize, abili.cacheSize, abili.noCacheSize, abili.jpegEncAbili, abili.jpegDecAbili, abili.scaleAbili);
     */
 
     /* for(i = 0;i < abili.vinAbili.chnNum;i++)
     // {
-    //     DEMOPRT("opdevsdk_init chan_id %d w %d h %d ,fps %f\n", \
+    //     DEMOPRT((char*)"opdevsdk_init chan_id %d w %d h %d ,fps %f\n", \
     //         abili.vinAbili.chnInfo[i].chan, abili.vinAbili.chnInfo[i].width, \
     //         abili.vinAbili.chnInfo[i].height, abili.vinAbili.chnInfo[i].fps);
     // }
@@ -648,7 +648,7 @@ static int demo_init_test()
 
     ///<get version
     opdevsdk_sys_getVersion(&version);
-    // DEMOPRT("opdevsdk_getVersion  version = %s\n",version.version);
+    // DEMOPRT((char*)"opdevsdk_getVersion  version = %s\n",version.version);
 
     return OPDEVSDK_S_OK;
 }
@@ -663,7 +663,7 @@ static int demo_mscale_prep(int *pchan, int *pgrpId, void **pms_hdl, OPDEVSDK_VI
     opdevsdk_sys_getAbility(&abili);
     if(abili.vinAbili.chnNum < 1)
     {
-        DEMOPRT("vinAbili.chnNum %d err\n", abili.vinAbili.chnNum);
+        DEMOPRT((char*)"vinAbili.chnNum %d err\n", abili.vinAbili.chnNum);
         return -1;
     }
 
@@ -673,17 +673,17 @@ static int demo_mscale_prep(int *pchan, int *pgrpId, void **pms_hdl, OPDEVSDK_VI
     ret =  opdevsdk_vin_init(chan);
     if(ret != OPDEVSDK_S_OK)
     {
-        DEMOPRT("opdevsdk_vin_init error ret = 0x%x\n",ret);
+        DEMOPRT((char*)"opdevsdk_vin_init error ret = 0x%x\n",ret);
         return -1;
     }
     bvin_init = OP_TRUE;
-    // DEMOPRT("opdevsdk_vin_init chan %d\n", chan);
+    // DEMOPRT((char*)"opdevsdk_vin_init chan %d\n", chan);
 
     //设置vi帧率
     ret = opdevsdk_vin_setFrameRate(chan, OPDEVSDK_VIDEO_FRAME_RATE_12_5);
     if(ret != OPDEVSDK_S_OK)
     {
-        DEMOPRT("opdevsdk_vin_setFrameRate error ret = 0x%x\n",ret);
+        DEMOPRT((char*)"opdevsdk_vin_setFrameRate error ret = 0x%x\n",ret);
         return -1;
     }
 
@@ -717,12 +717,12 @@ static int demo_mscale_prep(int *pchan, int *pgrpId, void **pms_hdl, OPDEVSDK_VI
     if(grpId < 0)
     {
         ret = grpId;
-        DEMOPRT("opdevsdk_mem_createVbPoolGrp error ret = 0x%x\n",ret);
+        DEMOPRT((char*)"opdevsdk_mem_createVbPoolGrp error ret = 0x%x\n",ret);
         return ret;
     }
     for(i = 0; i<vb_pool_grp.poolCnt; i++)
     {
-        DEMOPRT("vbpool create idx %d name %s poolId %d blkCnt %d blkSize %d\n",\
+        DEMOPRT((char*)"vbpool create idx %d name %s poolId %d blkCnt %d blkSize %d\n",\
             i, vb_pool_grp.pool[i].name, vb_pool_grp.pool[i].poolId, vb_pool_grp.pool[i].blkCnt, vb_pool_grp.pool[i].blkSize);
     }
     *pgrpId = grpId;
@@ -742,28 +742,28 @@ static int demo_mscale_prep(int *pchan, int *pgrpId, void **pms_hdl, OPDEVSDK_VI
     ret = opdevsdk_mscale_create(&ms_hdl,&mscale_info);
     if(ret != OPDEVSDK_S_OK)
     {
-        DEMOPRT("opdevsdk_mscale_create error ret = 0x%x\n",ret);
+        DEMOPRT((char*)"opdevsdk_mscale_create error ret = 0x%x\n",ret);
         return ret;
     }
     *pms_hdl = ms_hdl;
-    DEMOPRT("opdevsdk_mscale_create ok\n");
+    DEMOPRT((char*)"opdevsdk_mscale_create ok\n");
 
     //grp id 绑定,grpid对应的vb pool信息需要和mscale_hdl匹配 
     ret = opdevsdk_mscale_bindVbPoolGrp(ms_hdl, grpId);
     if(ret != OPDEVSDK_S_OK)
     {
-        DEMOPRT("opdevsdk_mscale_create error ret = 0x%x\n",ret);
+        DEMOPRT((char*)"opdevsdk_mscale_create error ret = 0x%x\n",ret);
         return ret;
     }
-    // DEMOPRT("opdevsdk_mscale_bindVbPoolGrp grpId %d\n", grpId);
+    // DEMOPRT((char*)"opdevsdk_mscale_bindVbPoolGrp grpId %d\n", grpId);
 
     ret = opdevsdk_mscale_start(ms_hdl);
     if(ret != OPDEVSDK_S_OK)
     {
-        DEMOPRT("opdevsdk_mscale_start error ret = 0x%x\n",ret);
+        DEMOPRT((char*)"opdevsdk_mscale_start error ret = 0x%x\n",ret);
         return ret;
     }
-    // DEMOPRT("opdevsdk_mscale_start \n");
+    // DEMOPRT((char*)"opdevsdk_mscale_start \n");
     return 0;
 }
 
@@ -784,16 +784,16 @@ static int demo_scheduler_test()
     ret = opdevsdk_sche_init();
     if(ret != OPDEVSDK_SCHE_S_OK)
     {
-        DEMOPRT("opdevsdk_sche_init eror ret = 0x%x\n",ret);
+        DEMOPRT((char*)"opdevsdk_sche_init eror ret = 0x%x\n",ret);
         return ret;
     }
     bsche_init = 1;
-    DEMOPRT("opdevsdk_sche_init\n");
+    DEMOPRT((char*)"opdevsdk_sche_init\n");
 
     ///< HIKFlow version
     OPDEVSDK_HKA_VERSION_ST version;
     opdevsdk_hikflow_GetVersion(&version);
-    // DEMOPRT("opdevsdk_hikflow_GetVersion: %s\n", version.version);
+    // DEMOPRT((char*)"opdevsdk_hikflow_GetVersion: %s\n", version.version);
 
     return OPDEVSDK_SCHE_S_OK;
 }
@@ -818,7 +818,7 @@ static int demo_alg_buf_init(DEMO_ALG_BUF *pyuv_buf,int width,int height )
         ret = opdevsdk_mem_allocCache(&phy_addr_buf, &pyuv_buf->frm[i].yuvFrame.pVirAddr[0],"ALG",width * height*1.5);
         if(ret != OPDEVSDK_S_OK)
         {
-            DEMOPRT("opdevsdk_mem_allocCache 1 error ret = 0x%x\n",ret);
+            DEMOPRT((char*)"opdevsdk_mem_allocCache 1 error ret = 0x%x\n",ret);
             return ret;
         }
 
@@ -827,7 +827,7 @@ static int demo_alg_buf_init(DEMO_ALG_BUF *pyuv_buf,int width,int height )
         pyuv_buf->frm[i].yuvFrame.pPhyAddr[1] = (void *)(PTR_VOID)phy_addr_buf + width * height;
         pyuv_buf->frm[i].yuvFrame.pVirAddr[2] = pyuv_buf->frm[i].yuvFrame.pVirAddr[0]+ width * height;
         pyuv_buf->frm[i].yuvFrame.pPhyAddr[2] = (void *)(PTR_VOID)phy_addr_buf + width * height;
-        // DEMOPRT("pyuv_buf->frm[i].yuvFrame.pPhyAddr[0] %p %p\n",pyuv_buf->frm[i].yuvFrame.pPhyAddr[0],pyuv_buf->frm[i].yuvFrame.pVirAddr[0]);
+        // DEMOPRT((char*)"pyuv_buf->frm[i].yuvFrame.pPhyAddr[0] %p %p\n",pyuv_buf->frm[i].yuvFrame.pPhyAddr[0],pyuv_buf->frm[i].yuvFrame.pVirAddr[0]);
     }
 
     pyuv_buf->buf_size = width * height * 3 / 2;
@@ -857,7 +857,7 @@ static int demo_yuv_buf_init(DEMO_YUV_BUF *pyuv_buf,int width,int height )
         ret = opdevsdk_mem_allocCache(&phy_addr_buf, &pyuv_buf->frm[i].yuvFrame.pVirAddr[0],"YUV",width * height*1.5);
         if(ret != OPDEVSDK_S_OK)
         {
-            DEMOPRT("opdevsdk_mem_allocCache 1 error ret = 0x%x\n",ret);
+            DEMOPRT((char*)"opdevsdk_mem_allocCache 1 error ret = 0x%x\n",ret);
             return ret;
         }
 
@@ -866,7 +866,7 @@ static int demo_yuv_buf_init(DEMO_YUV_BUF *pyuv_buf,int width,int height )
         pyuv_buf->frm[i].yuvFrame.pPhyAddr[1] = (void *)(PTR_VOID)phy_addr_buf + width * height;
         pyuv_buf->frm[i].yuvFrame.pVirAddr[2] = pyuv_buf->frm[i].yuvFrame.pVirAddr[0]+ width * height;
         pyuv_buf->frm[i].yuvFrame.pPhyAddr[2] = (void *)(PTR_VOID)phy_addr_buf + width * height;
-        // DEMOPRT("pyuv_buf->frm[i].yuvFrame.pPhyAddr[0] %p %p\n",pyuv_buf->frm[i].yuvFrame.pPhyAddr[0],pyuv_buf->frm[i].yuvFrame.pVirAddr[0]);
+        // DEMOPRT((char*)"pyuv_buf->frm[i].yuvFrame.pPhyAddr[0] %p %p\n",pyuv_buf->frm[i].yuvFrame.pPhyAddr[0],pyuv_buf->frm[i].yuvFrame.pVirAddr[0]);
 
     }
 
@@ -884,13 +884,14 @@ static int demo_yuv_buf_init(DEMO_YUV_BUF *pyuv_buf,int width,int height )
 * 
 * @return           0 if successful, otherwise an error number returned
 */
-static int demo_alg_proc_from_file_thread()
+// static int demo_alg_proc_from_file_thread()
+void* demo_alg_proc_from_file_thread(void* arg)
 {
     int ret = 0;
     ret = demo_alg_proc_fromFile();
     if(ret != OPDEVSDK_S_OK)
     {
-        DEMOPRT("demo_alg_process error  ret = 0x%x\n",ret);
+        DEMOPRT((char*)"demo_alg_process error  ret = 0x%x\n",ret);
     }
     return OPDEVSDK_S_OK;
 }
@@ -967,18 +968,18 @@ static int demo_alg_proc_thread()
     static int avg = 0,total = 0, frm_num = 0;
     
     OPDEVSDK_POS_TARGET_ST target[MAX_OUTPUT_BOX_NUM] = {0};
-    OPDEVSDK_POS_ALERT_INFO_ST alarm = {0};
-    OPDEVSDK_SYS_ABILITY_ST abili = {0};
+    OPDEVSDK_POS_ALERT_INFO_ST alarm = {OPDEVSDK_POS_TIME_TYPE_1K};
+    OPDEVSDK_SYS_ABILITY_ST abili = {OPDEVSDK_POS_TIME_TYPE_1K};
     opdevsdk_sys_getAbility(&abili);
     if(abili.vinAbili.chnNum < 1)
     {
-        // DEMOPRT("vinAbili.chnNum %d err\n", abili.vinAbili.chnNum);
+        // DEMOPRT((char*)"vinAbili.chnNum %d err\n", abili.vinAbili.chnNum);
         return -1;
     }
     int chan = abili.vinAbili.chnInfo[0].chan;
 
     int alarm_frm = 0;;
-    OPDEVSDK_POS_TARGET_LIST_INFO_ST pack_target = {0};
+    OPDEVSDK_POS_TARGET_LIST_INFO_ST pack_target = {OPDEVSDK_POS_TIME_TYPE_1K};
     while(thread_flg)
     {
 
@@ -1004,7 +1005,7 @@ static int demo_alg_proc_thread()
         ret = demo_alg_proc_fromCamera(pfrm, &pack_target, check_weight_limit);
         if(ret != OPDEVSDK_S_OK)
         {
-            DEMOPRT("demo_alg_process error  ret = 0x%x\n",ret);
+            DEMOPRT((char*)"demo_alg_process error  ret = 0x%x\n",ret);
         }
         gettimeofday(&tv, NULL);
         unsigned int end = (((unsigned int)tv.tv_sec) * 1000 + ((unsigned int)tv.tv_usec) / 1000);
@@ -1012,7 +1013,7 @@ static int demo_alg_proc_thread()
         alg_buf.buf_r++;
         alg_buf.buf_r = alg_buf.buf_r % DEMO_MAX_ALG_BUF_COUNT;
 
-        // DEMOPRT("put target frm %d, ts %llu\n", pfrm->frmNum, pfrm->timeStamp);
+        // DEMOPRT((char*)"put target frm %d, ts %llu\n", pfrm->frmNum, pfrm->timeStamp);
 
         //模拟算法报警,30帧间隔
         memset(&alarm, 0, sizeof(alarm));
@@ -1045,7 +1046,7 @@ static int demo_alg_proc_thread()
         ret = opdevsdk_pos_procTarget(chan, &pack_target);		
         if(ret != OPDEVSDK_S_OK)
         {
-            DEMOPRT("opdevsdk_videoDemoVca error  ret = 0x%x\n",ret);
+            DEMOPRT((char*)"opdevsdk_videoDemoVca error  ret = 0x%x\n",ret);
         }
 
         //规则打包
@@ -1070,7 +1071,7 @@ static int demo_alg_proc_thread()
         rule_info[1].polygon.point[2].y = 0.8;
         rule_info[1].polygon.point[3].x = 0.8;
         rule_info[1].polygon.point[3].y = 0.2;
-        OPDEVSDK_POS_RULE_LIST_INFO_ST rule = {0};
+        OPDEVSDK_POS_RULE_LIST_INFO_ST rule = {OPDEVSDK_POS_TIME_TYPE_1K};
         rule.timeType = OPDEVSDK_POS_TIME_TYPE_1K;
         rule.timeStamp = pfrm->timeStamp / 1000;//时间戳填写实际yuv时间戳
         rule.attribute = OPDEVSDK_POS_POLYGON_ATTRI_NORMAL;
@@ -1079,7 +1080,7 @@ static int demo_alg_proc_thread()
         ret = opdevsdk_pos_procRule( chan, &rule);
         if(ret != OPDEVSDK_S_OK)
         {
-            DEMOPRT("opdevsdk_pos_procRule error ret = 0x%x\n",ret);
+            DEMOPRT((char*)"opdevsdk_pos_procRule error ret = 0x%x\n",ret);
             //return -1;
         }
 
@@ -1091,7 +1092,7 @@ static int demo_alg_proc_thread()
             alarm.ruleInfo.enable = 1;
             alarm.ruleInfo.ruleType = rule_info[idx].ruleType;
             alarm.ruleInfo.polygon.pointNum = rule_info[idx].polygon.pointNum;
-            int i;
+            unsigned int i;
             for(i = 0; i < rule_info[idx].polygon.pointNum; i++)
             {
                 alarm.ruleInfo.polygon.point[i].x = rule_info[idx].polygon.point[i].x;
@@ -1102,19 +1103,19 @@ static int demo_alg_proc_thread()
             ret = opdevsdk_pos_procAlarm(chan, &alarm);
             if(ret != OPDEVSDK_S_OK)
             {
-                DEMOPRT("opdevsdk_pos_procAlarm error ret = 0x%x\n",ret);
+                DEMOPRT((char*)"opdevsdk_pos_procAlarm error ret = 0x%x\n",ret);
                 //return -1;
             }   
         }
 
         //calculate
-        //DEMOPRT("demo_alg_proc costtime:%dms \n",end - start);
+        //DEMOPRT((char*)"demo_alg_proc costtime:%dms \n",end - start);
         total += (end - start);
         frm_num += 1;
         avg = total / frm_num;
-        // DEMOPRT("alg proc interval %dms avg %dms\n", end - start, avg);
+        // DEMOPRT((char*)"alg proc interval %dms avg %dms\n", end - start, avg);
     }
-    // DEMOPRT("###### alg_proc_thrd exit thread_flg %d \n", thread_flg);
+    // DEMOPRT((char*)"###### alg_proc_thrd exit thread_flg %d \n", thread_flg);
 
     return OPDEVSDK_S_OK;
 }
@@ -1127,12 +1128,14 @@ static int demo_alg_proc_thread()
 * 
 * @return           0 if successful, otherwise an error number returned
 */ 
-static int demo_vin_get_thread(void *arg)
+void* demo_vin_get_thread(void *arg)
+// static int demo_vin_get_thread(void *arg)
 {
     if(arg != mscale_hdl)
     {
-        DEMOPRT("arg %p != mscale_hdl %p err\n", arg, mscale_hdl);
-        return -1;
+        DEMOPRT((char*)"arg %p != mscale_hdl %p err\n", arg, mscale_hdl);
+        // return -1;
+        return NULL;
     }
     int ret = 0;
     static int avg = 0,total = 0, frm_num = 0;
@@ -1150,8 +1153,9 @@ static int demo_vin_get_thread(void *arg)
     opdevsdk_sys_getAbility(&abili);
     if(abili.vinAbili.chnNum < 1)
     {
-        DEMOPRT("vinAbili.chnNum %d err\n", abili.vinAbili.chnNum);
-        return -1;
+        DEMOPRT((char*)"vinAbili.chnNum %d err\n", abili.vinAbili.chnNum);
+        // return -1;
+        return NULL;
     }
     int chan = abili.vinAbili.chnInfo[0].chan;
     //memset(&frame, 0, sizeof(OPDEVSDK_VIDEO_FRAME_INFO_ST));
@@ -1166,13 +1170,13 @@ static int demo_vin_get_thread(void *arg)
         ret = opdevsdk_vin_getFrame(chan, &vin_frame, -1);
         if(ret != OPDEVSDK_S_OK)
         {
-            DEMOPRT("opdevsdk_vin_getFrame error ret = 0x%x\n",ret);
+            DEMOPRT((char*)"opdevsdk_vin_getFrame error ret = 0x%x\n",ret);
             yuv_lost_times++;
             //return -1;
         }
         // if(frm_num % 25 == 0)
         // {
-        //     DEMOPRT("opdevsdk_vin_getFrame chan %d frm num %d ts %llu %02d:%02d:%02d_%03d\n",
+        //     DEMOPRT((char*)"opdevsdk_vin_getFrame chan %d frm num %d ts %llu %02d:%02d:%02d_%03d\n",
         //         vin_frame.chan, vin_frame.frmNum, vin_frame.timeStamp, vin_frame.dateTime.hour, 
         //         vin_frame.dateTime.minute, vin_frame.dateTime.second, vin_frame.dateTime.milliSecond);
         // }
@@ -1182,20 +1186,20 @@ static int demo_vin_get_thread(void *arg)
         ret = opdevsdk_mscale_sendFrame(mscale_hdl, &vin_frame);
         if(ret != OPDEVSDK_S_OK)
         {
-            DEMOPRT("opdevsdk_mscale_sendFrame  ret = 0x%x\n",ret);
+            DEMOPRT((char*)"opdevsdk_mscale_sendFrame  ret = 0x%x\n",ret);
             yuv_lost_times++;
         }
 
         ret = opdevsdk_vin_releaseFrame(chan, &vin_frame);
         if(ret != OPDEVSDK_S_OK)
         {
-            DEMOPRT("opdevsdk_vin_releaseFrame error ret = 0x%x\n",ret);
+            DEMOPRT((char*)"opdevsdk_vin_releaseFrame error ret = 0x%x\n",ret);
             yuv_lost_times++;
             //return -1;
         }
         if(frm_num % 25 == 0)
         {
-            DEMOPRT("opdevsdk_vin_releaseFrame chan %d ts %llu\n",vin_frame.chan, vin_frame.timeStamp);
+            DEMOPRT((char*)"opdevsdk_vin_releaseFrame chan %d ts %llu\n",vin_frame.chan, vin_frame.timeStamp);
         }
         memset(&vin_frame, 0, sizeof(OPDEVSDK_VIDEO_FRAME_INFO_ST));
 
@@ -1207,12 +1211,13 @@ static int demo_vin_get_thread(void *arg)
         avg = total / frm_num;
         if(frm_num % 25 == 0)
         {
-            DEMOPRT("getFrame interval %dms avg %dms\n", end - start, avg);
+            DEMOPRT((char*)"getFrame interval %dms avg %dms\n", end - start, avg);
         }
     }
-    DEMOPRT("###### vin_get_thrd exit thread_flg %d check_1 0x%x check_2 0x%x\n", thread_flg, check_1, check_2);
+    DEMOPRT((char*)"###### vin_get_thrd exit thread_flg %d check_1 0x%x check_2 0x%x\n", thread_flg, check_1, check_2);
 
-    return ret;
+    // return ret;
+    return NULL;
 }
 
 /** 
@@ -1222,7 +1227,8 @@ static int demo_vin_get_thread(void *arg)
 * 
 * @return           0 if successful, otherwise an error number returned
 */
-static int demo_alg_proc_thread_2()
+void* demo_alg_proc_thread_2(void* arg)
+// static int demo_alg_proc_thread_2()
 {
     int ret = 0;
     //OPDEVSDK_SYS_THREAD_NAME_ST name = {"alg_proc"};
@@ -1234,8 +1240,9 @@ static int demo_alg_proc_thread_2()
     opdevsdk_sys_getAbility(&abili);
     if(abili.vinAbili.chnNum < 1)
     {
-        // DEMOPRT("vinAbili.chnNum %d err\n", abili.vinAbili.chnNum);
-        return -1;
+        // DEMOPRT((char*)"vinAbili.chnNum %d err\n", abili.vinAbili.chnNum);
+        // return -1;
+        return NULL;
     }
     int chan = abili.vinAbili.chnInfo[0].chan;
     
@@ -1253,7 +1260,7 @@ static int demo_alg_proc_thread_2()
     int mscale_get_err = 0;
     int mscale_rel_err = 0;
 
-    OPDEVSDK_POS_TARGET_LIST_INFO_ST pack_target = {0};
+    OPDEVSDK_POS_TARGET_LIST_INFO_ST pack_target = {OPDEVSDK_POS_TIME_TYPE_1K};
 
     while(thread_flg)
     {
@@ -1263,14 +1270,14 @@ static int demo_alg_proc_thread_2()
             ret = opdevsdk_mscale_getFrame(mscale_hdl, img1, &img1_frame, -1);
             if(ret != OPDEVSDK_S_OK)
             {
-                DEMOPRT("demo_alg_process error  ret = 0x%x\n",ret);
+                DEMOPRT((char*)"demo_alg_process error  ret = 0x%x\n",ret);
                 mscale_get_err++;
             }
             //img2 get，也可单独开一个线程获取
             ret = opdevsdk_mscale_getFrame(mscale_hdl, img2, &img2_frame, -1);
             if(ret != OPDEVSDK_S_OK)
             {
-                DEMOPRT("demo_alg_process error  ret = 0x%x\n",ret);
+                DEMOPRT((char*)"demo_alg_process error  ret = 0x%x\n",ret);
                 mscale_get_err++;
             }
             
@@ -1284,7 +1291,7 @@ static int demo_alg_proc_thread_2()
             pack_target.tgtList.pTgt = &target[0];
             int check_weight_result = -1;
             check_weight_result = demo_alg_proc_fromCamera(&img2_frame, &pack_target, check_weight_limit);
-            DEMOPRT("*********check_weight_result:%d*******\n", check_weight_result);
+            DEMOPRT((char*)"*********check_weight_result:%d*******\n", check_weight_result);
             gettimeofday(&tv, NULL);
             unsigned int end = (((unsigned int)tv.tv_sec) * 1000 + ((unsigned int)tv.tv_usec) / 1000);
 
@@ -1292,7 +1299,7 @@ static int demo_alg_proc_thread_2()
             alg_buf.buf_r = alg_buf.buf_r % DEMO_MAX_ALG_BUF_COUNT;
             if(frm_num % 25 == 0)
             {
-                DEMOPRT("put target frm %d, ts %llu\n", img1_frame.frmNum, img1_frame.timeStamp);
+                DEMOPRT((char*)"put target frm %d, ts %llu\n", img1_frame.frmNum, img1_frame.timeStamp);
             }
 
 
@@ -1307,7 +1314,7 @@ static int demo_alg_proc_thread_2()
             ret = opdevsdk_pos_procTarget(chan, &pack_target);		
             if(ret != OPDEVSDK_S_OK)
             {
-                DEMOPRT("opdevsdk_videoDemoVca error  ret = 0x%x\n",ret);
+                DEMOPRT((char*)"opdevsdk_videoDemoVca error  ret = 0x%x\n",ret);
             }
 
        
@@ -1315,7 +1322,7 @@ static int demo_alg_proc_thread_2()
             ret = opdevsdk_mscale_releaseFrame(mscale_hdl, &img1_frame);
             if(ret != OPDEVSDK_S_OK)
             {
-                DEMOPRT("opdevsdk_mscale_releaseFrame error  ret = 0x%x\n",ret);
+                DEMOPRT((char*)"opdevsdk_mscale_releaseFrame error  ret = 0x%x\n",ret);
                 mscale_rel_err++;
             }
             memset(&img1_frame, 0, sizeof(OPDEVSDK_VIDEO_FRAME_INFO_ST));
@@ -1323,18 +1330,18 @@ static int demo_alg_proc_thread_2()
             ret = opdevsdk_mscale_releaseFrame(mscale_hdl, &img2_frame);
             if(ret != OPDEVSDK_S_OK)
             {
-                DEMOPRT("opdevsdk_mscale_releaseFrame error  ret = 0x%x\n",ret);
+                DEMOPRT((char*)"opdevsdk_mscale_releaseFrame error  ret = 0x%x\n",ret);
                 mscale_rel_err++;
             }
             memset(&img2_frame, 0, sizeof(OPDEVSDK_VIDEO_FRAME_INFO_ST));
             //calculate
-            //DEMOPRT("demo_alg_proc costtime:%dms \n",end - start);
+            //DEMOPRT((char*)"demo_alg_proc costtime:%dms \n",end - start);
             total += (end - start);
             frm_num += 1;
             avg = total / frm_num;
             // if(frm_num % 25 == 0)
             // {
-            //     DEMOPRT("alg proc interval %dms avg %dms\n", end - start, avg);
+            //     DEMOPRT((char*)"alg proc interval %dms avg %dms\n", end - start, avg);
             // }
             check_weight_flag = 0;
         }
@@ -1342,7 +1349,7 @@ static int demo_alg_proc_thread_2()
         {
             sleep(1);
         }
-    // DEMOPRT("###### alg_proc_thrd exit thread_flg %d check_1 0x%x check_2 0x%x\n", thread_flg, check_1, check_2);
+    // DEMOPRT((char*)"###### alg_proc_thrd exit thread_flg %d check_1 0x%x check_2 0x%x\n", thread_flg, check_1, check_2);
 
         return OPDEVSDK_S_OK;
     }
@@ -1357,7 +1364,8 @@ static int demo_alg_proc_thread_2()
 * 
 * @return           0 if successful, otherwise an error number returned
 */
-static void demo_socket_proc()
+void* demo_socket_proc(void* arg)
+// static void demo_socket_proc()
 {
     // make sure dem_init_socker_server have run
     // socket connection
@@ -1382,7 +1390,7 @@ static void demo_socket_proc()
 	socket_fd = socket(AF_INET, SOCK_STREAM, 0);
 	if(socket_fd < 0) 
 	{
-		opdevsdk_write_log(OPDEVSDK_LOG_DEBUG, "socket create error\n");
+		opdevsdk_write_log(OPDEVSDK_LOG_DEBUG, (char*)"socket create error\n");
 	}
 	else
 	{
@@ -1391,12 +1399,12 @@ static void demo_socket_proc()
 
     	if(bind(socket_fd, (struct sockaddr*)&tcp_server_addr, sizeof(tcp_server_addr)) == -1)
     	{
-    		opdevsdk_write_log(OPDEVSDK_LOG_DEBUG, "bind error! \n");
+    		opdevsdk_write_log(OPDEVSDK_LOG_DEBUG, (char*)"bind error! \n");
     	}
     	
     	if(listen(socket_fd, 3))
     	{
-    		opdevsdk_write_log(OPDEVSDK_LOG_DEBUG, "Server listen error! \n");
+    		opdevsdk_write_log(OPDEVSDK_LOG_DEBUG, (char*)"Server listen error! \n");
     	}
 	}
 
@@ -1405,20 +1413,20 @@ static void demo_socket_proc()
 		connect_sock = accept(socket_fd, (struct sockaddr*)&tcp_client_addr, &length);
 		if(connect_sock < 0)
 		{
-			opdevsdk_write_log(OPDEVSDK_LOG_DEBUG, "accept error!\n");
+			opdevsdk_write_log(OPDEVSDK_LOG_DEBUG, (char*)"accept error!\n");
 			sleep(3);
 			continue;
 		}
 		else
 		{
-			opdevsdk_write_log(OPDEVSDK_LOG_DEBUG, "sucess link! \n");
+			opdevsdk_write_log(OPDEVSDK_LOG_DEBUG, (char*)"sucess link! \n");
 		}
 		
 		memset(receive_buf, 0, sizeof(receive_buf));
 		ret = read(connect_sock, receive_buf, sizeof(receive_buf));
 		if(ret > 0)
 		{
-		    opdevsdk_write_log(OPDEVSDK_LOG_DEBUG, "@@@server recv: %s@@@\n", receive_buf);
+		    opdevsdk_write_log(OPDEVSDK_LOG_DEBUG, (char*)"@@@server recv: %s@@@\n", receive_buf);
             // 判断是否是传参数的
             if ((NULL != strstr(receive_buf, "/config?weight_limit=")))
             {
@@ -1427,7 +1435,7 @@ static void demo_socket_proc()
                 *p2 = '\0';
                 p += strlen("/config?weight_limit=");
                 int check_weight_limit = atoi(p);
-                DEMOPRT("设置地磅参数为：%d", check_weight_limit);
+                DEMOPRT((char*)"设置地磅参数为：%d", check_weight_limit);
             }
             else  // 不传参数，判断车辆是否在磅上
             {
@@ -1459,7 +1467,7 @@ static void demo_socket_proc()
         ret = write(connect_sock, json_string, strlen(json_string));
 		if(ret < 0)
 		{
-		    opdevsdk_write_log(OPDEVSDK_LOG_DEBUG, "server write err!  ret === %d\n", ret);
+		    opdevsdk_write_log(OPDEVSDK_LOG_DEBUG, (char*)"server write err!  ret === %d\n", ret);
 		}
         
 		close(connect_sock);
@@ -1490,7 +1498,7 @@ int demo_core_dump_open(char *pCorePid, char *pCorePath)
         ///1, set core ulimit
         if (getrlimit(RLIMIT_CORE, &limit))
         {
-            DEMOPRT("get resource limit fail!\n");
+            DEMOPRT((char*)"get resource limit fail!\n");
             break;
         }
 
@@ -1506,7 +1514,7 @@ int demo_core_dump_open(char *pCorePid, char *pCorePath)
 
             if (setrlimit(RLIMIT_CORE, &limit_set))
             {
-                DEMOPRT( "set core ulimited fail!\n");
+                DEMOPRT((char*)"set core ulimited fail!\n");
                 break;
             }
         }
@@ -1517,12 +1525,12 @@ int demo_core_dump_open(char *pCorePid, char *pCorePath)
             iFd1 = open("/proc/sys/kernel/core_uses_pid", O_RDWR|O_NDELAY|O_TRUNC, 0644);
             if (iFd1 < 0)
             {
-                DEMOPRT( "open core_uses_pid fail!\n");
+                DEMOPRT((char*)"open core_uses_pid fail!\n");
                 break;
             }
             if (strlen(pCorePid) != write(iFd1, pCorePid, strlen(pCorePid)))
             {
-                DEMOPRT("set core_uses_pid fail!\n");
+                DEMOPRT((char*)"set core_uses_pid fail!\n");
                 close(iFd1);
                 break;               
             }
@@ -1535,12 +1543,12 @@ int demo_core_dump_open(char *pCorePid, char *pCorePath)
             iFd2 = open("/proc/sys/kernel/core_pattern", O_RDWR|O_NDELAY|O_TRUNC, 0644);
             if (iFd2 < 0)
             {
-                DEMOPRT("open core_pattern fail!\n");
+                DEMOPRT((char*)"open core_pattern fail!\n");
                 break;
             }
             if (strlen(pCorePath) != write(iFd2, pCorePath, strlen(pCorePath)))
             {
-                DEMOPRT("set core_pattern fail!\n");
+                DEMOPRT((char*)"set core_pattern fail!\n");
                 close(iFd2);
                 break;               
             }
@@ -1549,7 +1557,7 @@ int demo_core_dump_open(char *pCorePid, char *pCorePath)
 
         ///4, set core dump open succ
         iRet = 0;
-        // DEMOPRT("set core dump open succ!\n"); 
+        // DEMOPRT((char*)"set core dump open succ!\n"); 
     }while(0);
 
     return iRet;
@@ -1602,31 +1610,31 @@ void demo_set_core_dump(void)
 static void sigsegv_handler(int signum, siginfo_t* info, void*ptr)
 {
 	static const char *si_codes[3] = {"", "SEGV_MAPERR", "SEGV_ACCERR"};
-	// DEMOPRT("######## info.si_signo = %d\n", signum);
-	// DEMOPRT("######## info.si_errno = %d\n", info->si_errno);
+	// DEMOPRT((char*)"######## info.si_signo = %d\n", signum);
+	// DEMOPRT((char*)"######## info.si_errno = %d\n", info->si_errno);
 	if((info->si_code < 0)||(info->si_code >=  sizeof(si_codes)/sizeof(char *)))
 	{
-		DEMOPRT("######## info.si_code  = %d\n", info->si_code);
+		DEMOPRT((char*)"######## info.si_code  = %d\n", info->si_code);
 	}
 	else
 	{
-		DEMOPRT("######## info.si_code  = %d (%s)\n", info->si_code, si_codes[info->si_code]);
+		DEMOPRT((char*)"######## info.si_code  = %d (%s)\n", info->si_code, si_codes[info->si_code]);
 	}
-	DEMOPRT("######## info.si_addr  = %p\n", info->si_addr);
+	DEMOPRT((char*)"######## info.si_addr  = %p\n", info->si_addr);
 
 	if((SIGSEGV == signum) || (SIGFPE  == signum) || (SIGINT  == signum) || (SIGTERM  == signum) || (SIGKILL  == signum))
 	{
 		ucontext_t *ucontext = (ucontext_t*)ptr;
 		
 	    /*for arm*/
-		DEMOPRT("######## the arm_fp 0x%3x\n",(unsigned int)ucontext->uc_mcontext.arm_fp);
-		DEMOPRT("######## the arm_ip 0x%3x\n",(unsigned int)ucontext->uc_mcontext.arm_ip);
-	    DEMOPRT("######## the aarch64_sp 0x%3x\n",(unsigned int)ucontext->uc_mcontext.arm_sp);
-		DEMOPRT("######## the arm_lr 0x%3x\n",(unsigned int)ucontext->uc_mcontext.arm_lr);
-    	DEMOPRT("######## the aarch64_pc 0x%3x\n",(unsigned int)ucontext->uc_mcontext.arm_pc);
-    	DEMOPRT("######## the arm_cpsr 0x%3x\n",(unsigned int)ucontext->uc_mcontext.arm_cpsr);
-    	DEMOPRT("######## the falut_address 0x%3x\n",(unsigned int)ucontext->uc_mcontext.fault_address);
-	    DEMOPRT("######## Stack trace (non-dedicated):");
+		DEMOPRT((char*)"######## the arm_fp 0x%3x\n",(unsigned int)ucontext->uc_mcontext.arm_fp);
+		DEMOPRT((char*)"######## the arm_ip 0x%3x\n",(unsigned int)ucontext->uc_mcontext.arm_ip);
+	    DEMOPRT((char*)"######## the aarch64_sp 0x%3x\n",(unsigned int)ucontext->uc_mcontext.arm_sp);
+		DEMOPRT((char*)"######## the arm_lr 0x%3x\n",(unsigned int)ucontext->uc_mcontext.arm_lr);
+    	DEMOPRT((char*)"######## the aarch64_pc 0x%3x\n",(unsigned int)ucontext->uc_mcontext.arm_pc);
+    	DEMOPRT((char*)"######## the arm_cpsr 0x%3x\n",(unsigned int)ucontext->uc_mcontext.arm_cpsr);
+    	DEMOPRT((char*)"######## the falut_address 0x%3x\n",(unsigned int)ucontext->uc_mcontext.fault_address);
+	    DEMOPRT((char*)"######## Stack trace (non-dedicated):");
 	    /*int sz = backtrace(bt, 20);
 	    printf("the stack trace is %d\n",sz);
 	    strings = backtrace_symbols(bt, sz);
@@ -1635,7 +1643,7 @@ static void sigsegv_handler(int signum, siginfo_t* info, void*ptr)
 	    }*/
 	//_exit (-1);
 	}
-    DEMOPRT("\nrun demo_signal_clean\n");
+    DEMOPRT((char*)"\nrun demo_signal_clean\n");
     demo_signal_clean();
 	signal(signum,SIG_DFL);
 }
@@ -1715,14 +1723,14 @@ int main(int argc, char *argv[])
     ///<the situation:input param
     if (argc != 3)
     {
-        DEMOPRT("please input configure file\n");
-        DEMOPRT("eg: ./opdevsdkDemo_caffe yolo_caffe_config.txt YUV or ./opdevsdkDemo_caffe yolo_caffe_config.txt FILE\n");
+        DEMOPRT((char*)"please input configure file\n");
+        DEMOPRT((char*)"eg: ./opdevsdkDemo_caffe yolo_caffe_config.txt YUV or ./opdevsdkDemo_caffe yolo_caffe_config.txt FILE\n");
         return -1;
     } 
     
     if((0 != strcmp("YUV", argv[2])) && (0 != strcmp("FILE", argv[2])))
     {
-        DEMOPRT("please input argv[2] 'FILE' or 'YUV'\n");
+        DEMOPRT((char*)"please input argv[2] 'FILE' or 'YUV'\n");
         return -1;
     }
 
@@ -1745,43 +1753,43 @@ int main(int argc, char *argv[])
     //sleep(8);
     //!!!注意!!!,当前demo示例中会有大量打印，DEMOPRT直接调用函数devsdk_print，会在设备目录(/home/opdevsdk/.../dlog/，可能有调整)下记录log信息，
     //实际项目中，不建议将所有打印信息记录，建议精简记录，仅记录有用信息，
-    DEMOPRT("########################################### opdevsdk debug      #########################################\n");
+    DEMOPRT((char*)"########################################### opdevsdk debug      #########################################\n");
   
 
     sleep(1);
 
-    DEMOPRT("--- demo_init_test start\n");
+    DEMOPRT((char*)"--- demo_init_test start\n");
     //demo system init
     demo_init_test();
-    DEMOPRT("--- demo_init_test end\n");
+    DEMOPRT((char*)"--- demo_init_test end\n");
     //printf("2 bf\n");
     //system("free");
 
     demo_init_socket_server();
-    DEMOPRT("--- demo_init_socket_server end\n");
+    DEMOPRT((char*)"--- demo_init_socket_server end\n");
 
-    DEMOPRT("--- demo_scheduler_test start\n");
+    DEMOPRT((char*)"--- demo_scheduler_test start\n");
     //scheduler init
 
     demo_scheduler_test();
-    DEMOPRT("--- demo_scheduler_test end\n");
+    DEMOPRT((char*)"--- demo_scheduler_test end\n");
 
-    DEMOPRT("--- demo_alg_init start\n");
+    DEMOPRT((char*)"--- demo_alg_init start\n");
     //hikflow init
     demo_alg_init(argv[1]);
-    DEMOPRT("--- demo_alg_init end\n");
+    DEMOPRT((char*)"--- demo_alg_init end\n");
     thread_flg = 1;
 
     if(0 == strcmp("FILE", argv[2]))
     {
         /*algorithm processing thread*/
-        pthread_create(&yuv_proc_tid, NULL, (void *)demo_alg_proc_from_file_thread, NULL);  
+        pthread_create(&yuv_proc_tid, NULL, demo_alg_proc_from_file_thread, NULL);  
         pthread_join(yuv_proc_tid, NULL);
     }
     else if (0 == strcmp("YUV", argv[2]))
     {
         demo_alg_get_res(&alg_width, &alg_height);
-        // DEMOPRT("--- alg_width %d alg_height %d MSCALE_TEST %d\n", alg_width, alg_height, MSCALE_TEST);
+        // DEMOPRT((char*)"--- alg_width %d alg_height %d MSCALE_TEST %d\n", alg_width, alg_height, MSCALE_TEST);
         
         int grpId = 0;
         void *ms_hdl = NULL;
@@ -1791,7 +1799,7 @@ int main(int argc, char *argv[])
         ret = demo_mscale_prep(&chan, &grpId, &ms_hdl, &vin_info);
         if(ret != 0)
         {
-            DEMOPRT("demo_mscale_prep error ret = 0x%x\n",ret);
+            DEMOPRT((char*)"demo_mscale_prep error ret = 0x%x\n",ret);
             return ret;
         }
         groupId = grpId;
@@ -1802,7 +1810,7 @@ int main(int argc, char *argv[])
         opdevsdk_sys_getAbility(&abili);
         if(abili.vinAbili.chnNum < 1)
         {
-            DEMOPRT("vinAbili.chnNum %d err\n", abili.vinAbili.chnNum);
+            DEMOPRT((char*)"vinAbili.chnNum %d err\n", abili.vinAbili.chnNum);
             return -1;
         }
 
@@ -1811,17 +1819,17 @@ int main(int argc, char *argv[])
         ret =  opdevsdk_vin_init(chan);
         if(ret != OPDEVSDK_S_OK)
         {
-            DEMOPRT("opdevsdk_vin_init error ret = 0x%x\n",ret);
+            DEMOPRT((char*)"opdevsdk_vin_init error ret = 0x%x\n",ret);
             return -1;
         }
         bvin_init = OP_TRUE;
-        // DEMOPRT("opdevsdk_vin_init chan %d\n", chan);
+        // DEMOPRT((char*)"opdevsdk_vin_init chan %d\n", chan);
 
         //设置vi帧率
         ret = opdevsdk_vin_setFrameRate(chan, OPDEVSDK_VIDEO_FRAME_RATE_6_25);
         if(ret != OPDEVSDK_S_OK)
         {
-            DEMOPRT("opdevsdk_vin_setFrameRate error ret = 0x%x\n",ret);
+            DEMOPRT((char*)"opdevsdk_vin_setFrameRate error ret = 0x%x\n",ret);
             return -1;
         }
 
@@ -1830,35 +1838,35 @@ int main(int argc, char *argv[])
         #endif
         input_width = vin_info.width;
         input_height = vin_info.height;
-        // DEMOPRT("chan %d input w %d h %d\n", chan, input_width, input_height);
+        // DEMOPRT((char*)"chan %d input w %d h %d\n", chan, input_width, input_height);
 
         thread_flg = 1;
         #if MSCALE_TEST
         {
             /*getting YUV frames to algorithm buffer*/
-            ret = pthread_create(&yuv_proc_tid, NULL, (void *)demo_vin_get_thread, mscale_hdl);
+            ret = pthread_create(&yuv_proc_tid, NULL, demo_vin_get_thread, mscale_hdl);
             //线程优先级默认填80，栈大小可填0(当前内部限制最低2M),args为透传参数,不需要填0，后面不填透传参数
             if(ret != 0)
             {
-                DEMOPRT("devsdk_pthrd_creat_pthread error ret = 0x%x\n",ret);
+                DEMOPRT((char*)"devsdk_pthrd_creat_pthread error ret = 0x%x\n",ret);
                 return ret;
             }
             //pthread_create(&yuv_proc_tid, NULL, (void *)demo_vin_get_thread, NULL);
 
             /*algorithm processing*/
-            ret = pthread_create(&yuv_proc_tid_2, NULL, (void *)demo_alg_proc_thread_2, NULL);
+            ret = pthread_create(&yuv_proc_tid_2, NULL, demo_alg_proc_thread_2, NULL);
             if(ret != 0)
             {
-                DEMOPRT("devsdk_pthrd_creat_pthread error ret = 0x%x\n",ret);
+                DEMOPRT((char*)"devsdk_pthrd_creat_pthread error ret = 0x%x\n",ret);
                 return ret;
             }
             //pthread_create(&yuv_proc_tid_2, NULL, (void *)demo_alg_proc_thread_2, NULL);
             
             /*socket connection processing*/
-            ret = pthread_create(&socket_proc_tid, NULL, (void *)demo_socket_proc, NULL);
+            ret = pthread_create(&socket_proc_tid, NULL, demo_socket_proc, NULL);
             if(ret != 0)
             {
-                DEMOPRT("socket_pthrd_creat_pthread error ret = 0x%x\n",ret);
+                DEMOPRT((char*)"socket_pthrd_creat_pthread error ret = 0x%x\n",ret);
                 return ret;
             }
         }
@@ -1873,7 +1881,7 @@ int main(int argc, char *argv[])
             //线程优先级默认填80，栈大小可填0(当前内部限制最低2M),args为透传参数,不需要填0，后面不填透传参数
             if(ret != 0)
             {
-                DEMOPRT("devsdk_pthrd_creat_pthread error ret = 0x%x\n",ret);
+                DEMOPRT((char*)"devsdk_pthrd_creat_pthread error ret = 0x%x\n",ret);
                 return ret;
             }
 
@@ -1881,7 +1889,7 @@ int main(int argc, char *argv[])
             ret = pthread_create(&yuv_proc_tid_2, NULL, (void *)demo_alg_proc_thread, NULL);
             if(ret != 0)
             {
-                DEMOPRT("devsdk_pthrd_creat_pthread error ret = 0x%x\n",ret);
+                DEMOPRT((char*)"devsdk_pthrd_creat_pthread error ret = 0x%x\n",ret);
                 return ret;
             }
         }

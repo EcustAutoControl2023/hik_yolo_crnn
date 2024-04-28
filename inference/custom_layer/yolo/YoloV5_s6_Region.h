@@ -9,7 +9,6 @@ extern "C" {
 #include <math.h>
 
 ///< Macro Defination
-// TODO: 记得改类别数
 #define MAX_CLASS_NUM                 (1)          ///< max class num
 #define UPSAMPLE_RATIO                (64)
 #define YOLOV5_NMS_BLOB_NUM           (4)

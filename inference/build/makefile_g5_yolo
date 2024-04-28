@@ -11,9 +11,10 @@ TEST_MODULE = custom_layer/yolo
 #-----------------------------------[ conf ]------------------------------------------------------------------------
 ROOT_DIR = ../G5
 LIB_DIR = $(ROOT_DIR)/lib
-SRC_DIR  = ..
+SRC_DIR  = .
 LDFLAGS = -L$(LIB_DIR)/opdevsdk -lbsc
 LDFLAGS += -L$(LIB_DIR)/hikflow -lhal_bsp
+LDFLAGS += -L$(LIB_DIR)/opencv -lopencv_core -lopencv_imgcodecs -lopencv_imgproc -lopencv_dnn
 LDFLAGS += -Wl,-rpath=../G5/lib/hikflow:../G5/lib/opdevsdk
 LDFLAGS += -L/heop/lib/
 
@@ -27,12 +28,14 @@ INC_DIR += -I$(ROOT_DIR)/3rdparty/sdk_9852x_c/include
 INC_DIR += -I$(ROOT_DIR)/inc/hikflow
 INC_DIR += -I$(ROOT_DIR)/inc/opdevsdk
 INC_DIR += -I$(ROOT_DIR)/inc/scheduler
+INC_DIR += -I$(ROOT_DIR)/inc/opencv
 INC_DIR += -I$(SRC_DIR)/$(TEST_MODULE)
 
 SOURCES  = $(wildcard $(SRC_DIR)/code/*.c)
-SOURCES  = $(wildcard $(SRC_DIR)/code/yolo/*.c)
+SOURCES += $(wildcard $(SRC_DIR)/code/yolo/*.c)
 SOURCES += $(wildcard $(SRC_DIR)/$(TEST_MODULE)/*.c)
 CPP_SOURCES = $(wildcard $(SRC_DIR)/$(TEST_MODULE)/*.cpp)
+CPP_SOURCES += $(wildcard $(SRC_DIR)/code/yolo/*.cpp)
 OBJECTS  = $(notdir $(patsubst %.c,%.o,$(SOURCES)))
 CPP_OBJECTS =  $(notdir $(patsubst %.cpp,%.o,$(CPP_SOURCES)))
 
@@ -66,7 +69,7 @@ TARGET = ../yolomodel
 all : $(TARGET)
 
 $(TARGET): $(OBJS_ALL)
-	$(CC) $(CFLAGS) -o $@ $(OBJS_ALL) $(LDFLAGS) $(LIBS) -lpthread -lm -lrt -lnanomsg -lopdevsdk -lcurl -lssl -lcrypto -lcjson
+	$(CPP) $(CFLAGS) -o $@ $(OBJS_ALL) $(LDFLAGS) $(LIBS) -lpthread -lm -lrt -lnanomsg -lopdevsdk -lcurl -lssl -lcrypto -lcjson
 	@echo 
 	@if [ "$(DEBUG_BUILD)" = "yes" ]; then echo "###########################################"; fi
 	@if [ "$(DEBUG_BUILD)" = "yes" ]; then echo "################ Debug Build ##############"; fi
@@ -77,8 +80,8 @@ $(TARGET): $(OBJS_ALL)
 	@-rm -f $(OBJECTS)
 	@-rm -f *.o
 
-$(OBJECTS): $(SOURCES)
-	$(CC) $(CFLAGS) -c $^
+$(OBJECTS): $(SOURCES) $(CPP_SOURCES)
+	$(CPP) $(CFLAGS) -c $^
 $(CPP_OBJECTS): $(CPP_SOURCES)
 	$(CPP) $(CFLAGS) -c $^
 

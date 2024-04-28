@@ -15,7 +15,7 @@
 #include "custom_YoloV5_s6_Region_layer.h"
 #include "YoloV5_s6_Region.h"
 
-#define CUSTOM_YOLOV5_S6_REGION_MEM_ALIGN_SIZE          128
+#define CUSTOM_YOLOV5_S6_REGION_MEM_ALIGN_SIZE          OPDEVSDK_HKA_MEM_ALIGN_128BYTE
 #define CUSTOM_YOLOV5_S6_REGION_ALIGN(size)             (((size) + ((128) - 1)) & (~((128) - 1)))
 #define OPC_SIZE_ALIGN(size, align)             ((((int)size) + ((align)-1)) & (~((align)-1)))
 
@@ -299,7 +299,7 @@ int CUSTOM_YOLOV5_S6_REGION_GetMemsize(OPDEVSDK_HIKFLOW_LDATA_ST   *ld,
     memset(mem_tab, 0, sizeof(mem_tab[0]) * OPDEVSDK_HKA_MEM_TAB_NUM);
     malloc_tab   = &mem_tab[0];
     aux_tab      = &mem_tab[1];
-    yolov5_s6_region_layer.model = ld->layer_model->model_handle;
+    yolov5_s6_region_layer.model = (OPDEVSDK_YOLOV5_S6_REGION_MODEL_T*)ld->layer_model->model_handle;
     ///< call reshape function to calculate the size of params blob
     sts = CUSTOM_YOLOV5_S6_REGION_reshape(&yolov5_s6_region_layer, ld);
     CHECK_ERROR(0 != sts,"CUSTOM_YOLOV5_S6_REGION_reshape error!", sts);
@@ -363,7 +363,7 @@ int CUSTOM_YOLOV5_S6_REGION_Create(OPDEVSDK_HIKFLOW_LDATA_ST *ld,
                                                                       CUSTOM_YOLOV5_S6_REGION_MEM_ALIGN_SIZE,
                                                                       1);
     CHECK_ERROR(NULL == yolov5_s6_region_layer, "CUSTOM_YOLOV5_S6_REGION_Create handle CUSTOM_alloc_buffer failed!", HIKFLOW_STS_ERR_CUS_LAYER_ALLOC_ERROR);
-    yolov5_s6_region_layer->model = ld->layer_model->model_handle;
+    yolov5_s6_region_layer->model = (OPDEVSDK_YOLOV5_S6_REGION_MODEL_T*)ld->layer_model->model_handle;
     ///< call reshape function to calculate the size of params blob
     sts = CUSTOM_YOLOV5_S6_REGION_reshape(yolov5_s6_region_layer, ld);
     CHECK_ERROR(0 != sts, "CUSTOM_YOLOV5_S6_REGION_reshape error!", sts);
@@ -439,7 +439,7 @@ int CUSTOM_YOLOV5_S6_REGION_Forward(void                      *handle,
     CHECK_ERROR(NULL == handle, "CUSTOM_YOLOV5_S6_REGION_Forward handle = null error!\n", HIKFLOW_STS_ERR_CUS_LAYER_NULL_PTR);
     CHECK_ERROR(NULL == ld, "CUSTOM_YOLOV5_S6_REGION_Forward ld = null error!\n", HIKFLOW_STS_ERR_CUS_LAYER_NULL_PTR);
     ///< call forward function
-    sts = YoloV5_s6_Region_Forward( y1, in1_n, in1_c, in1_h, in1_w, y2, in2_n, in2_c, in2_h, in2_w, y3, in3_n, in3_c, in3_h, in3_w, y4, in4_n, in4_c, in4_h, in4_w, output, outshape, num_anchors, num_classes, conf_thresh, nms_thresh, __auxi_mem_addr__ );
+    sts = YoloV5_s6_Region_Forward( y1, in1_n, in1_c, in1_h, in1_w, y2, in2_n, in2_c, in2_h, in2_w, y3, in3_n, in3_c, in3_h, in3_w, y4, in4_n, in4_c, in4_h, in4_w, output, outshape, num_anchors, num_classes, conf_thresh, nms_thresh, (char*)__auxi_mem_addr__ );
     CHECK_ERROR(HIKFLOW_STS_OK != sts, "CUSTOM_YOLOV5_S6_REGION_Forward YoloV5_s6_Region_Forward failed!", HIKFLOW_STS_ERR_CUS_LAYER_FORWARD_FAILED);
 
     ///< set the output blob

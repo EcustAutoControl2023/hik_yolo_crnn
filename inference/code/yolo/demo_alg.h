@@ -132,6 +132,8 @@ int demo_alg_releaseBuffer();
 
 int demo_alg_get_res(int *alg_w, int *alg_h);
 
+void releaseIfErr();
+
 #ifdef __cplusplus
 }
 #endif

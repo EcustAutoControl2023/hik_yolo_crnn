@@ -18,10 +18,10 @@ class YoloV5_s6_Region(nn.Module):
         return torch.ones([1, 1, 1, 1])
 
 class Detect(nn.Module):
-    def __init__(self, nc=80, anchors=(), ch=()):  # detection layer
+    def __init__(self, nc=1, anchors=(), ch=()):  # detection layer
         super(Detect, self).__init__()
         self.stride = None  # strides computed during build
-        self.nc = nc  # number of classes
+        self.nc = 1  # number of classes
         self.no = nc + 5  # number of outputs per anchor
         self.nl = len(anchors)  # number of detection layers
         self.na = len(anchors[0]) // 2  # number of anchors
@@ -87,15 +87,36 @@ class Detect(nn.Module):
         return torch.stack((xv, yv), 2).view((1, 1, ny, nx, 2)).float()
 '''
 
+# class Focus(nn.Module):
+#     # Focus wh information into c-space
+#     def __init__(self, c1, c2, k=1, s=1, p=None, g=1, act=True):  # ch_in, ch_out, kernel, stride, padding, groups
+#         super().__init__()
+#         self.conv = Conv(c1 * 4, c2, k, s, p, g, act)
+#         # self.contract = Contract(gain=2)
+#
+#     def forward(self, x):  # x(b,c,w,h) -> y(b,4c,w/2,h/2)
+#         return self.conv(torch.cat([x[..., ::2, ::2], x[..., 1::2, ::2], x[..., ::2, 1::2], x[..., 1::2, 1::2]], 1))
+#         # return self.conv(self.contract(x))
+
 class Focus(nn.Module):
     # Focus wh information into c-space
     def __init__(self, c1, c2, k=1, s=1, p=None, g=1, act=True):  # ch_in, ch_out, kernel, stride, padding, groups
         super().__init__()
+        # self.conv = Conv(c1 * 4, c2, k, s, p, g, act)
+        self.conv1 = nn.Conv2d(c1, c1, 2, 2, 0, groups=3, bias=False)
+        self.conv2 = nn.Conv2d(c1, c1, 2, 2, 0, groups=3, bias=False)
+        self.conv3 = nn.Conv2d(c1, c1, 2, 2, 0, groups=3, bias=False)
+        self.conv4 = nn.Conv2d(c1, c1, 2, 2, 0, groups=3, bias=False)
         self.conv = Conv(c1 * 4, c2, k, s, p, g, act)
         # self.contract = Contract(gain=2)
 
     def forward(self, x):  # x(b,c,w,h) -> y(b,4c,w/2,h/2)
-        return self.conv(torch.cat([x[..., ::2, ::2], x[..., 1::2, ::2], x[..., ::2, 1::2], x[..., 1::2, 1::2]], 1))
+        # return self.conv(torch.cat([x[..., ::2, ::2], x[..., 1::2, ::2], x[..., ::2, 1::2], x[..., 1::2, 1::2]], 1))
+        x1 = self.conv1(x)
+        x2 = self.conv2(x)
+        x3 = self.conv3(x)
+        x4 = self.conv4(x)
+        return self.conv(torch.cat([x1, x2, x3, x4], 1))
         # return self.conv(self.contract(x))
 
 class GhostConv(nn.Module):
@@ -207,7 +228,7 @@ class C3TR(C3):
         super().__init__(c1, c2, n, shortcut, g, e)
         c_ = int(c2 * e)
         self.m = TransformerBlock(c_, c_, 4, n)
-        
+
 class C3SPP(C3):
     # C3 module with SPP()
     def __init__(self, c1, c2, k=(5, 9, 13), n=1, shortcut=True, g=1, e=0.5):
@@ -256,9 +277,9 @@ class Expand(nn.Module):
         x = x.view(b, s, s, c // s ** 2, h, w)  # x(1,2,2,16,80,80)
         x = x.permute(0, 3, 4, 1, 5, 2).contiguous()  # x(1,16,80,2,80,2)
         return x.view(b, c // s ** 2, h * s, w * s)  # x(1,16,160,160)
-        
+
 class YoloV5_s6(nn.Module):
-    def __init__(self, cfg='./SourceProject/yolov5-6.0/models/yolov5s6.yaml', ch=3, nc=None, anchors=None):  # model, input channels, number of classes
+    def __init__(self, cfg='./SourceProject/yolov5-6/models/yolov5s6.yaml', ch=3, nc=None, anchors=None):  # model, input channels, number of classes
         super().__init__()
         import yaml
         with open(cfg, errors='ignore') as f:
@@ -370,3 +391,4 @@ import math
 def make_divisible(x, divisor):
     # Returns x evenly divisible by divisor
     return math.ceil(x / divisor) * divisor
+

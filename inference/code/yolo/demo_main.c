@@ -1776,6 +1776,7 @@ int main(int argc, char *argv[])
 
     DEMOPRT((char*)"--- demo_alg_init start\n");
     //hikflow init
+// TODO:加载两个模型
     demo_alg_init(argv[1]);
     DEMOPRT((char*)"--- demo_alg_init end\n");
     thread_flg = 1;

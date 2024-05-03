@@ -33,12 +33,10 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include <iostream>
 #include <string>
-#include <opencv2/dnn.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
 
 using namespace cv;
-using namespace dnn;
 using namespace std;
 
 typedef struct Landmarks_8 {
@@ -48,34 +46,22 @@ typedef struct Landmarks_8 {
 	Point2f right_bottom;
 } Landmarks_8;
 
-class lprnet
-{
-public:
-	lprnet()
-	{
-		this->net = readNet("Final_LPRNet_model.onnx");
-	}
-	string rec(Mat img);
-private:
-	Net net;
-	const Size plate_size = Size(94, 24);
-};
-
 class detect_plate_recognition
 {
 	public:
-		detect_plate_recognition(float confThreshold, float nmsThreshold) :LPR()
+		detect_plate_recognition(float confThreshold, float nmsThreshold) 
+	// :LPR()
 		{
 			this->confidence_threshold = confThreshold;
 			this->nms_threshold = nmsThreshold;
-			this->net = readNet("mnet_plate.onnx");
+			// this->net = readNet("mnet_plate.onnx");
 			this->generate_priors();
 		}
 		void detect_rec(Mat& srcimg);
 	private:
 		const int im_height = 640;
 		const int im_width = 640;
-		Net net;
+		// Net net;
 		float confidence_threshold;
 		float nms_threshold;
 		const int top_k = 1000;
@@ -94,61 +80,61 @@ class detect_plate_recognition
 		void decode(const Mat loc, const Mat conf, const Mat landms, vector<Rect>& boxes, vector<float>& confidences, vector<int>& classIds, vector<Landmarks_8>& four_pair_points);
 		Mat crop_plate(const Point2f* points_src, const Mat srcimg, const int xmin, const int ymin, const int xmax, const int ymax);
 		const Size plate_size = Size(94, 24);
-		lprnet LPR;
+		// lprnet LPR;
 };
 
 extern const string name = "京沪津渝冀晋蒙辽吉黑苏浙皖闽赣鲁豫鄂湘粤桂琼川贵云藏陕甘青宁新0123456789ABCDEFGHJKLMNPQRSTUVWXYZIO-";
-string lprnet::rec(Mat img)
-{
-	Mat blob = blobFromImage(img, 1 / 128.0, this->plate_size, Scalar(127.5));
-	this->net.setInput(blob);
-	vector<Mat> outs;
-	this->net.forward(outs);
-	int height = outs[0].rows;
-	int width = outs[0].cols;
-	int i = 0;
-	int* preb_label = new int[width];
-	for (i = 0; i < width; i++)
-	{
-		Mat scores = outs[0].col(i).rowRange(0, height);
-		Point classIdPoint;
-		double score;
-		minMaxLoc(scores, 0, &score, 0, &classIdPoint);
-		preb_label[i] = classIdPoint.y;
-	}
-
-	vector<int> no_repeat_blank_label;
-	int pre_c = preb_label[0];
-	int last = height - 1;
-	if (pre_c != last)
-	{
-		no_repeat_blank_label.push_back(pre_c);
-	}
-	int c = 0;
-	for (i = 0; i < width; i++)
-	{
-		c = preb_label[i];
-		if ((pre_c == c) || (c == last))
-		{
-			if (c == last)
-			{
-				pre_c = c;
-			}
-			continue;
-		}
-		no_repeat_blank_label.push_back(c);
-		pre_c = c;
-	}
-	delete [] preb_label;
-	int len_s = no_repeat_blank_label.size();
-	string result;
-	for (i = 0; i < len_s; i++)
-	{
-		//cout << name[no_repeat_blank_label[i]] << endl;
-		result.push_back(name[no_repeat_blank_label[i]]);
-	}
-	return result;
-}
+// string lprnet::rec(Mat img)
+// {
+// 	Mat blob = blobFromImage(img, 1 / 128.0, this->plate_size, Scalar(127.5));
+// 	this->net.setInput(blob);
+// 	vector<Mat> outs;
+// 	this->net.forward(outs);
+// 	int height = outs[0].rows;
+// 	int width = outs[0].cols;
+// 	int i = 0;
+// 	int* preb_label = new int[width];
+// 	for (i = 0; i < width; i++)
+// 	{
+// 		Mat scores = outs[0].col(i).rowRange(0, height);
+// 		Point classIdPoint;
+// 		double score;
+// 		minMaxLoc(scores, 0, &score, 0, &classIdPoint);
+// 		preb_label[i] = classIdPoint.y;
+// 	}
+//
+// 	vector<int> no_repeat_blank_label;
+// 	int pre_c = preb_label[0];
+// 	int last = height - 1;
+// 	if (pre_c != last)
+// 	{
+// 		no_repeat_blank_label.push_back(pre_c);
+// 	}
+// 	int c = 0;
+// 	for (i = 0; i < width; i++)
+// 	{
+// 		c = preb_label[i];
+// 		if ((pre_c == c) || (c == last))
+// 		{
+// 			if (c == last)
+// 			{
+// 				pre_c = c;
+// 			}
+// 			continue;
+// 		}
+// 		no_repeat_blank_label.push_back(c);
+// 		pre_c = c;
+// 	}
+// 	delete [] preb_label;
+// 	int len_s = no_repeat_blank_label.size();
+// 	string result;
+// 	for (i = 0; i < len_s; i++)
+// 	{
+// 		//cout << name[no_repeat_blank_label[i]] << endl;
+// 		result.push_back(name[no_repeat_blank_label[i]]);
+// 	}
+// 	return result;
+// }
 
 Mat detect_plate_recognition::resize_image(Mat srcimg, int* newh, int* neww, int* top, int* left)
 {
@@ -274,59 +260,59 @@ Mat detect_plate_recognition::crop_plate(const Point2f* points_src, const Mat sr
 	warpPerspective(plate_src, plate_dst, perspectiveMat, this->plate_size);
 	return plate_dst;
 }
-void detect_plate_recognition::detect_rec(Mat& srcimg)
-{
-	int newh = 0, neww = 0, top = 0, left = 0;
-	Mat img = this->resize_image(srcimg, &newh, &neww, &top, &left);
-	Mat blob = blobFromImage(img, 1.0, Size(), Scalar(104, 117, 123));
-
-	this->net.setInput(blob);
-	vector<Mat> outs;
-	this->net.forward(outs, this->net.getUnconnectedOutLayersNames());
-	
-	////post process
-	vector<int> classIds;
-	vector<float> confidences;
-	vector<Rect> boxes;
-	vector<Landmarks_8> four_pair_points;
-	this->decode(outs[0], outs[1], outs[2], boxes, confidences, classIds, four_pair_points);
-	vector<int> indices;
-	NMSBoxes(boxes, confidences, this->confidence_threshold, this->nms_threshold, indices);
-	float ratioh = (float)srcimg.rows / newh;
-	float ratiow = (float)srcimg.cols / neww;
-	for (size_t i = 0; i < indices.size(); ++i)
-	{
-		int idx = indices[i];
-		Rect box = boxes[idx];
-		int xmin = (int)max((box.x - left)*ratiow, 0.f);
-		int ymin = (int)max((box.y - top)*ratioh, 0.f);
-		int xmax = (int)min((box.x - left + box.width)*ratiow, (float)srcimg.cols);
-		int ymax = (int)min((box.y - top + box.height)*ratioh, (float)srcimg.rows);
-		Landmarks_8 points = four_pair_points[idx];
-		Point2f points_src[4];
-		points_src[0] = Point2f((points.left_top.x - left)*ratiow, (points.left_top.y - top)*ratioh);
-		points_src[1] = Point2f((points.right_top.x - left)*ratiow, (points.right_top.y - top)*ratioh);
-		points_src[2] = Point2f((points.left_bottom.x - left)*ratiow, (points.left_bottom.y - top)*ratioh);
-		points_src[3] = Point2f((points.right_bottom.x - left)*ratiow, (points.right_bottom.y - top)*ratioh);
-		Mat plate_roi = this->crop_plate(points_src, srcimg, xmin, ymin, xmax, ymax);
-		string plate_number = LPR.rec(plate_roi);
-		cout << plate_number << endl;
-
-		rectangle(srcimg, Point(xmin, ymin), Point(xmax, ymax), Scalar(0, 0, 255), 3);
-		/*string label = format("%.2f", confidences[idx]);
-		int baseLine;
-		Size labelSize = getTextSize(label, FONT_HERSHEY_SIMPLEX, 0.5, 1, &baseLine);
-		ymin = max(ymin, labelSize.height);*/
-		//rectangle(frame, Point(left, top - int(1.5 * labelSize.height)), Point(left + int(1.5 * labelSize.width), top + baseLine), Scalar(0, 255, 0), FILLED);
-		//putText(srcimg, label, Point(xmin, ymin), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(0, 255, 0), 1);
-
-		for (int j = 0; j < 4; j++)
-		{
-			circle(srcimg, Point((int)points_src[j].x, (int)points_src[j].y), 2, Scalar(255, 0, 0), -1);
-		}
-		//imshow("plate_roi", plate_roi);
-	}
-}
+// void detect_plate_recognition::detect_rec(Mat& srcimg)
+// {
+// 	int newh = 0, neww = 0, top = 0, left = 0;
+// 	Mat img = this->resize_image(srcimg, &newh, &neww, &top, &left);
+// 	Mat blob = blobFromImage(img, 1.0, Size(), Scalar(104, 117, 123));
+//
+// 	this->net.setInput(blob);
+// 	vector<Mat> outs;
+// 	this->net.forward(outs, this->net.getUnconnectedOutLayersNames());
+// 	
+// 	////post process
+// 	vector<int> classIds;
+// 	vector<float> confidences;
+// 	vector<Rect> boxes;
+// 	vector<Landmarks_8> four_pair_points;
+// 	this->decode(outs[0], outs[1], outs[2], boxes, confidences, classIds, four_pair_points);
+// 	vector<int> indices;
+// 	NMSBoxes(boxes, confidences, this->confidence_threshold, this->nms_threshold, indices);
+// 	float ratioh = (float)srcimg.rows / newh;
+// 	float ratiow = (float)srcimg.cols / neww;
+// 	for (size_t i = 0; i < indices.size(); ++i)
+// 	{
+// 		int idx = indices[i];
+// 		Rect box = boxes[idx];
+// 		int xmin = (int)max((box.x - left)*ratiow, 0.f);
+// 		int ymin = (int)max((box.y - top)*ratioh, 0.f);
+// 		int xmax = (int)min((box.x - left + box.width)*ratiow, (float)srcimg.cols);
+// 		int ymax = (int)min((box.y - top + box.height)*ratioh, (float)srcimg.rows);
+// 		Landmarks_8 points = four_pair_points[idx];
+// 		Point2f points_src[4];
+// 		points_src[0] = Point2f((points.left_top.x - left)*ratiow, (points.left_top.y - top)*ratioh);
+// 		points_src[1] = Point2f((points.right_top.x - left)*ratiow, (points.right_top.y - top)*ratioh);
+// 		points_src[2] = Point2f((points.left_bottom.x - left)*ratiow, (points.left_bottom.y - top)*ratioh);
+// 		points_src[3] = Point2f((points.right_bottom.x - left)*ratiow, (points.right_bottom.y - top)*ratioh);
+// 		Mat plate_roi = this->crop_plate(points_src, srcimg, xmin, ymin, xmax, ymax);
+// 		// string plate_number = LPR.rec(plate_roi);
+// 		cout << plate_number << endl;
+//
+// 		rectangle(srcimg, Point(xmin, ymin), Point(xmax, ymax), Scalar(0, 0, 255), 3);
+// 		/*string label = format("%.2f", confidences[idx]);
+// 		int baseLine;
+// 		Size labelSize = getTextSize(label, FONT_HERSHEY_SIMPLEX, 0.5, 1, &baseLine);
+// 		ymin = max(ymin, labelSize.height);*/
+// 		//rectangle(frame, Point(left, top - int(1.5 * labelSize.height)), Point(left + int(1.5 * labelSize.width), top + baseLine), Scalar(0, 255, 0), FILLED);
+// 		//putText(srcimg, label, Point(xmin, ymin), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(0, 255, 0), 1);
+//
+// 		for (int j = 0; j < 4; j++)
+// 		{
+// 			circle(srcimg, Point((int)points_src[j].x, (int)points_src[j].y), 2, Scalar(255, 0, 0), -1);
+// 		}
+// 		//imshow("plate_roi", plate_roi);
+// 	}
+// }
 
 // #include "opdevsdk_hikflow_custom.h"
 // #include "opencv2/opencv.hpp"

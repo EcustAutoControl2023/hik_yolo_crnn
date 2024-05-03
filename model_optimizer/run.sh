@@ -1,7 +1,7 @@
 pwd_path=$(readlink -f "$(dirname "$0")")
 status=$?
 # third project environment configuration
-export PYTHONPATH=$pwd_path/SourceProject/yolov5-6.0:$PYTHONPATH
+export PYTHONPATH=$pwd_path/SourceProject/yolov5-6:$PYTHONPATH
 
 echo "[demo] start running demo model_trans.sh"
 
@@ -38,6 +38,26 @@ else  # only $2 == auto
     fi
 
     # 2. generate inference images
+
+    # 首先清除ref_img_dir下的文件
+    if [ -d $pwd_path/Sample/ref_img_dir ]; then
+        echo "[demo] remove old image folder..."
+        rm -rf $pwd_path/Sample/ref_img_dir/*
+    fi
+    # 然后根据suffix拷贝文件到ref_img_dir下
+    if [ $suffix == "yolo" ]; then
+        cp -rf $pwd_path/Sample/car_ref_img_dir/* $pwd_path/Sample/ref_img_dir
+        cp -rf $pwd_path/Sample/ref_image_list_car.txt $pwd_path/Sample/ref_image_list.txt
+        # 替换文件中的car_前缀
+        sed -i 's/car_//g' $pwd_path/Sample/ref_image_list.txt
+
+    elif [ $suffix == "rcnn" ]; then
+        cp -rf $pwd_path/Sample/plate_ref_img_dir/* $pwd_path/Sample/ref_img_dir
+        cp -rf $pwd_path/Sample/ref_image_list_plate.txt $pwd_path/Sample/ref_image_list.txt
+        # 替换文件中的plate_前缀
+        sed -i 's/plate_//g' $pwd_path/Sample/ref_image_list.txt
+    fi
+
     scale=1  # 1 letterbox, 0 resize
     hikflow_pre_imgs.sh $1 $scale
     if [ $? -ne 0 ]; then
@@ -61,20 +81,26 @@ else  # only $2 == auto
     model_trans.sh $1
 
     # 4. copy custom layer
-    if [ -d $pwd_path/../inference/custom_layer/$suffix ]; then
-        echo "[demo] remove old custom layer files..."
-        rm -rf $pwd_path/../inference/custom_layer/$suffix/*
-    fi
-
-    if [ "`ls -A $out_path/tctool`" != "" ] && [ -d $pwd_path/../inference/custom_layer/$suffix ]; then
-        cp $out_path/tctool/*.c $pwd_path/../inference/custom_layer/$suffix
-        cp $out_path/tctool/*.h $pwd_path/../inference/custom_layer/$suffix
-        cp $out_path/opc/*.c $pwd_path/../inference/custom_layer/$suffix
-        cp $out_path/opc/*.h $pwd_path/../inference/custom_layer/$suffix
-        if [ "`ls $out_path/tctool | grep -F .o`" != "" ]; then 
-            cp $out_path/tctool/*.o $pwd_path/../inference/custom_layer/$suffix
+    custom_layer_switcher=0
+    if [ $custom_layer_switcher -eq 1 ]; then
+        echo "[demo] processing custom layer files..."
+        if [ -d $pwd_path/../inference/custom_layer/$suffix ]; then
+            echo "[demo] remove old custom layer files..."
+            rm -rf $pwd_path/../inference/custom_layer/$suffix/*
         fi
-    fi 
+
+        if [ "`ls -A $out_path/tctool`" != "" ] && [ -d $pwd_path/../inference/custom_layer/$suffix ]; then
+            cp $out_path/tctool/*.c $pwd_path/../inference/custom_layer/$suffix
+            cp $out_path/tctool/*.h $pwd_path/../inference/custom_layer/$suffix
+            cp $out_path/opc/*.c $pwd_path/../inference/custom_layer/$suffix
+            cp $out_path/opc/*.h $pwd_path/../inference/custom_layer/$suffix
+            if [ "`ls $out_path/tctool | grep -F .o`" != "" ]; then 
+                cp $out_path/tctool/*.o $pwd_path/../inference/custom_layer/$suffix
+            fi
+        fi 
+    else
+        echo "[demo] no custom layer files to process..."
+    fi
 
     # 5. cp model files
     if [ -d $pwd_path/../inference ]; then

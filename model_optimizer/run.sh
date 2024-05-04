@@ -8,13 +8,13 @@ echo "[demo] start running demo model_trans.sh"
 echo $1
 echo $2
 
-# 如果$1中有Yolo则后缀为yolo，若有RCNN则后缀为rcnn
+# 如果$1中有Yolo则后缀为yolo，若有CRNN则后缀为crnn
 if [[ $1 == *"Yolo"* ]]; then
   suffix="yolo"
-elif [[ $1 == *"RCNN"* ]]; then
-  suffix="rcnn"
+elif [[ $1 == *"CRNN"* ]]; then
+  suffix="crnn"
 else
-  echo "Invalid argument. Please provide either 'Yolo' or 'RCNN'."
+  echo "Invalid argument. Please provide either 'Yolo' or 'CRNN'."
   exit 1
 fi
 
@@ -51,7 +51,7 @@ else  # only $2 == auto
         # 替换文件中的car_前缀
         sed -i 's/car_//g' $pwd_path/Sample/ref_image_list.txt
 
-    elif [ $suffix == "rcnn" ]; then
+    elif [ $suffix == "crnn" ]; then
         cp -rf $pwd_path/Sample/plate_ref_img_dir/* $pwd_path/Sample/ref_img_dir
         cp -rf $pwd_path/Sample/ref_image_list_plate.txt $pwd_path/Sample/ref_image_list.txt
         # 替换文件中的plate_前缀

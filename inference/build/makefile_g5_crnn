@@ -6,7 +6,7 @@ CC = $(CROSS_COMPILE)gcc
 CPP = $(CROSS_COMPILE)g++
 
 #测试模块
-TEST_MODULE = custom_layer/rcnn
+TEST_MODULE = custom_layer/crnn
 
 #-----------------------------------[ conf ]------------------------------------------------------------------------
 ROOT_DIR = ../G5
@@ -30,7 +30,7 @@ INC_DIR += -I$(ROOT_DIR)/inc/scheduler
 INC_DIR += -I$(SRC_DIR)/$(TEST_MODULE)
 
 SOURCES  = $(wildcard $(SRC_DIR)/code/*.c)
-SOURCES += $(wildcard $(SRC_DIR)/code/rcnn/*.c)
+SOURCES += $(wildcard $(SRC_DIR)/code/crnn/*.c)
 SOURCES += $(wildcard $(SRC_DIR)/$(TEST_MODULE)/*.c)
 CPP_SOURCES = $(wildcard $(SRC_DIR)/$(TEST_MODULE)/*.cpp)
 OBJECTS  = $(notdir $(patsubst %.c,%.o,$(SOURCES)))
@@ -60,7 +60,7 @@ else
 endif
 #-----------------------------------[ all ]-----------------------------------------------------------------------------
 
-TARGET = ../rcnnmodel
+TARGET = ../crnnmodel
 
 
 all : $(TARGET)

@@ -31,6 +31,7 @@
 #include "opdevsdk_hikflow_dev_man.h"
 #include "opdevsdk_hka_types.h"
 #include "opdevsdk_mem.h"
+#include "plate_rec.h"
 
 #define _CRT_SECURE_NO_WARNINGS
 // #include <iostream>
@@ -39,6 +40,9 @@
 #include <string>
 
 using namespace cv;
+
+#define MEAN_VALUE 0.588
+#define STD_VALUE 0.193
 
 // #include "opdevsdk_hikflow_custom.h"
 // #include "opencv2/opencv.hpp"
@@ -942,11 +946,14 @@ err:
  */
 int demo_alg_proc_fromFile() {
   int ret = 0;
-  unsigned long long total = 0;
+  unsigned long long total[HIK_MODEL_NUM] = {0};
 
   OUTPUT_BOX_INFO *box_info;
-  OPDEVSDK_HIKFLOW_FORWARD_OUT_INFO_ST hkann_out;
-  memset(&hkann_out, 0, sizeof(hkann_out));
+  OPDEVSDK_HIKFLOW_FORWARD_OUT_INFO_ST hkann_out[HIK_MODEL_NUM];
+  // memset(&hkann_out, 0, sizeof(hkann_out));
+  for (int i = 0; i < HIK_MODEL_NUM; i++) {
+    memset(&hkann_out[i], 0, sizeof(OPDEVSDK_HIKFLOW_FORWARD_OUT_INFO_ST));
+  }
 
   FILE *test_file = NULL;
   void *test_img_data = NULL;
@@ -1038,8 +1045,8 @@ int demo_alg_proc_fromFile() {
       }
     }
 
-    ret = demo_alg_Process(g_net_handle[0], &g_param_info_net[0], &hkann_out,
-                           &g_config_data[0], test_img_data, k, &total);
+    ret = demo_alg_Process(g_net_handle[0], &g_param_info_net[0], &hkann_out[0],
+                           &g_config_data[0], test_img_data, k, &total[0]);
     if (ret != 0) {
       DEMOPRT((char *)"demo_alg_Process error= 0x%x \n", ret);
       goto err;
@@ -1056,17 +1063,17 @@ int demo_alg_proc_fromFile() {
     // DEMOPRT((char*)"you can get result in %s\n",res_file_name);
     // DEMOPRT((char*)"----------------------------------------------------------------\n");
     int n =
-        hkann_out.output_blob[0].shape[0] * hkann_out.output_blob[0].shape[1] *
-        hkann_out.output_blob[0].shape[2] * hkann_out.output_blob[0].shape[3];
+        hkann_out[0].output_blob[0].shape[0] * hkann_out[0].output_blob[0].shape[1] *
+        hkann_out[0].output_blob[0].shape[2] * hkann_out[0].output_blob[0].shape[3];
     DEMOPRT((char *)"blob_num = %d,shape[0] = %d,shape[1] =%d,shape[2] "
                     "=%d,shape[3] =%d\n",
-            hkann_out.blob_num, hkann_out.output_blob[0].shape[0],
-            hkann_out.output_blob[0].shape[1],
-            hkann_out.output_blob[0].shape[2],
-            hkann_out.output_blob[0].shape[3]);
+            hkann_out[0].blob_num, hkann_out[0].output_blob[0].shape[0],
+            hkann_out[0].output_blob[0].shape[1],
+            hkann_out[0].output_blob[0].shape[2],
+            hkann_out[0].output_blob[0].shape[3]);
     // for (int c = 0; c < n; c++)
     // {
-    //     score = ((float *)(hkann_out.output_blob[0].data))[c];
+    //     score = ((float *)(hkann_out[0].output_blob[0].data))[c];
     //     fprintf(result_fp, "%f\n", score);
     //
     // }
@@ -1080,9 +1087,9 @@ int demo_alg_proc_fromFile() {
                     "different,\n    please change it \n");
     DEMOPRT((char *)"----------------------------------------------------------"
                     "------\n");
-    int detectnum = hkann_out.output_blob[0].shape[0];
+    int detectnum = hkann_out[0].output_blob[0].shape[0];
     for (i = 0; i < detectnum; i++) {
-      box_info = (OUTPUT_BOX_INFO *)hkann_out.output_blob[0].data;
+      box_info = (OUTPUT_BOX_INFO *)hkann_out[0].output_blob[0].data;
       box_info = box_info + i;
       DEMOPRT((char *)"current bounding box: %d\n", i);
       DEMOPRT((char *)"class  = %f\n", box_info->class_type);
@@ -1093,7 +1100,6 @@ int demo_alg_proc_fromFile() {
       DEMOPRT((char *)"h       = %f\n", box_info->bbox.h);
       DEMOPRT((char *)"batch   = %f\n", box_info->batch_idx);
 
-    // TODO: 可能会报错
       Mat rawToMat = Mat(640, 640, CV_8UC3, (uchar *)current_processing_pic);
       float x_min = box_info->bbox.x;
       float y_min = box_info->bbox.y;
@@ -1108,6 +1114,7 @@ int demo_alg_proc_fromFile() {
           rawToMat(Rect(x_min, y_min, x_max - x_min + 1, y_max - y_min + 1));
       // 符合CRNN模型输入的尺寸
       Mat plate_resize = Mat::zeros(Size(168, 48), plate.type());
+
       // 计算截取的车牌的宽高比
       double aspect_ratio = static_cast<double>(plate.cols) / plate.rows;
       int new_width = 168;
@@ -1130,12 +1137,32 @@ int demo_alg_proc_fromFile() {
       DEMOPRT((char *)"plate_resize width = %d\n", plate_resize.cols);
       DEMOPRT((char *)"plate_resize height = %d\n", plate_resize.rows);
 
-      // XXX: 以下为验证代码
       unsigned char* plate_data = (unsigned char*)plate_resize.data;
-      // 打印前2个GBR通道的值，openCV的存储方式是BGR[B, G, R, B, G, R], 验证是否正确
-      for (int i = 0; i < 6; i++) {
-        DEMOPRT((char *)"plate_data[%d] = %d\n", i, plate_data[i]);
+
+      ret = demo_alg_Process(g_net_handle[1], &g_param_info_net[1], &hkann_out[1],
+                             &g_config_data[1], plate_data, 1, &total[1]);
+      if (ret != 0) {
+        DEMOPRT((char *)"demo_alg_Process error= 0x%x \n", ret);
+        goto err;
       }
+
+      float **arr = NULL;
+      arr = (float **)malloc(21 * sizeof(float *));
+      for (int i = 0; i < 21; i++)
+        arr[i] = (float *)malloc(78 * sizeof(float));
+
+      parseRawData((float *)hkann_out[1].output_blob[0].data, 78 * 21, &arr);
+
+      char *palte_name = parsePlateName(arr, 21);
+      for (int i = 0; i < 21; i++) {
+        if (arr[i] != NULL)
+          free(arr[i]);
+      }
+      if (arr != NULL)
+        free(arr);
+      DEMOPRT((char *)"车牌号为：%s\n", palte_name);
+
+      free(palte_name);
     }
 
     DEMOPRT((char *)"----------------------------------------------------------"
@@ -1144,7 +1171,7 @@ int demo_alg_proc_fromFile() {
       fclose(result_fp);
     }
   }
-  DEMOPRT((char *)"Process avg time:%llu us\n", total / total_pic_num);
+  DEMOPRT((char *)"Process avg time:%llu us\n", (total[0] + total[1]) / total_pic_num);
 
 err:
   ///< release network

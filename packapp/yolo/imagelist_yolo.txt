@@ -1,10 +1,1 @@
 ./data/1.bgr
-./data/10.bgr
-./data/11.bgr
-./data/12.bgr
-./data/13.bgr
-./data/14.bgr
-./data/15.bgr
-./data/16.bgr
-./data/17.bgr
-./data/18.bgr

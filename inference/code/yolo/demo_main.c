@@ -305,7 +305,7 @@ static int demo_img_copy(OPDEVSDK_VIDEO_FRAME_ST *yuvSrc,
 
   ret = opdevsdk_img_scale(yuvSrc, yuvDst, scale);
   if (ret != OPDEVSDK_S_OK) {
-    DEMOPRT((char *)"opdevsdk_imageScale eror ret = 0x%x\n", ret);
+    DEMOPRT((char *)"opdevsdk_imageScale error ret = 0x%x\n", ret);
     return ret;
   }
   return OPDEVSDK_S_OK;
@@ -457,7 +457,7 @@ static int32_t GetMethodIsapiRetContent(char *url,
                                         OP_DEVSDK_MIME_UNIT_ST *in_buf,
                                         char *buf, unsigned int bufLen) {
   unsigned int ret = 0;
-  OP_DEVSDK_DATATRANS_INPUT_ST stIntput = {0};
+  OP_DEVSDK_DATATRANS_INPUT_ST stInput = {0};
   OP_DEVSDK_DATATRANS_OUTPUT_ST stOutput = {0};
   POP_DEVSDK_MIME_UNIT_ST out_data = NULL;
   POP_DEVSDK_MIME_UNIT_ST p_mime_st = NULL;
@@ -469,11 +469,11 @@ static int32_t GetMethodIsapiRetContent(char *url,
     return ERROR;
   }
 
-  stIntput.p_request_url = url;
-  stIntput.request_url_len = strlen(url);
-  stIntput.p_in_buffer = (char *)in_buf;
-  stIntput.in_buffer_num = 1;
-  stIntput.recv_time_out = 0;
+  stInput.p_request_url = url;
+  stInput.request_url_len = strlen(url);
+  stInput.p_in_buffer = (char *)in_buf;
+  stInput.in_buffer_num = 1;
+  stInput.recv_time_out = 0;
 
   out_data =
       (POP_DEVSDK_MIME_UNIT_ST)malloc(1 * sizeof(OP_DEVSDK_MIME_UNIT_ST));
@@ -490,7 +490,7 @@ static int32_t GetMethodIsapiRetContent(char *url,
   out_data->p_content = buf;
   out_data->content_len = bufLen;
 
-  if (0 != opdevsdk_dataTrans_sendDataShort(&stIntput, &stOutput)) {
+  if (0 != opdevsdk_dataTrans_sendDataShort(&stInput, &stOutput)) {
     opdevsdk_write_log(OPDEVSDK_LOG_ERROR,
                        (char *)"[GetMethodIsapiRetContent] "
                                "opdevsdk_dataTrans_sendDataShort exec fail!\n");
@@ -620,7 +620,7 @@ static int demo_init_test() {
   ///< first:initialize mediaDrv
   ret = opdevsdk_sys_init(); ///< G5
   if (ret != OPDEVSDK_S_OK) {
-    DEMOPRT((char *)"opdevsdk_init eror ret = 0x%x\n", ret);
+    DEMOPRT((char *)"opdevsdk_init error ret = 0x%x\n", ret);
     return ret;
   }
 
@@ -773,7 +773,7 @@ static int demo_scheduler_test() {
   ///< scheduler init
   ret = opdevsdk_sche_init();
   if (ret != OPDEVSDK_SCHE_S_OK) {
-    DEMOPRT((char *)"opdevsdk_sche_init eror ret = 0x%x\n", ret);
+    DEMOPRT((char *)"opdevsdk_sche_init error ret = 0x%x\n", ret);
     return ret;
   }
   bsche_init = 1;
@@ -1400,7 +1400,7 @@ void *demo_socket_proc(void *arg)
       sleep(3);
       continue;
     } else {
-      opdevsdk_write_log(OPDEVSDK_LOG_DEBUG, (char *)"sucess link! \n");
+      opdevsdk_write_log(OPDEVSDK_LOG_DEBUG, (char *)"success link! \n");
     }
 
     memset(receive_buf, 0, sizeof(receive_buf));
@@ -1484,7 +1484,7 @@ int demo_core_dump_open(char *pCorePid, char *pCorePath) {
       }
 
       if (setrlimit(RLIMIT_CORE, &limit_set)) {
-        DEMOPRT((char *)"set core ulimited fail!\n");
+        DEMOPRT((char *)"set core unlimited fail!\n");
         break;
       }
     }

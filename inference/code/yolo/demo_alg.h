@@ -37,6 +37,8 @@ extern "C" {
 */
 #define DEMO_ALG_MAX_PATH_LENGTH                    (256)
 #define MAX_OUTPUT_BOX_NUM  (64)   ///< max bounding box num for each blob
+#define HIK_MODEL_NUM (2)
+#define HIK_MODEL_KEY "hikflow_model_path=%s\n"
 
 /**
 * @brief CONFIG_DATA_T struct
@@ -45,7 +47,7 @@ typedef struct _CONFIG_DATA_T
 {
     int                             core_proc_type;              ///< processor type (8 is HIKFLOW_DL_PROC_TYPE_4 7 is HIKFLOW_DL_PROC_TYPE_3)
     int                             test_data_type;              ///< image type,0 means RGB,1 means NV21
-    int                             data_mem_type;               ///< memory alloced type,0 show arm memory,1 means that memory is alloced from mem moduler in medDrv library      
+    int                             data_mem_type;               ///< memory allocated type,0 show arm memory,1 means that memory is allocated from mem moduler in medDrv library      
     char                            hikflow_model_path[DEMO_ALG_MAX_PATH_LENGTH];     ///< model path
     char                            test_image_list[DEMO_ALG_MAX_PATH_LENGTH];        ///< image list
     char                            result_path[DEMO_ALG_MAX_PATH_LENGTH];            ///< result path
@@ -132,8 +134,7 @@ int demo_alg_releaseBuffer();
 
 int demo_alg_get_res(int *alg_w, int *alg_h);
 
-void releaseIfErr();
-
+int releaseIfErr();
 #ifdef __cplusplus
 }
 #endif

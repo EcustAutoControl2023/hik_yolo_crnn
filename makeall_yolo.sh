@@ -9,6 +9,7 @@ mv  yolomodel ../packapp/yolo/yolomodel
 cp imagelist_yolo.txt ../packapp/yolo
 cp config_yolomodel.txt ../packapp/yolo
 cp ./bin/YoloV5_s6_P_G5_NPU0.bin ../packapp/yolo
+cp ./bin/myNet_ocr_P_G5_NPU0.bin ../packapp/yolo
 mkdir -p ../packapp/yolo/data
 cp ./data/yolo/* ../packapp/yolo/data
 cp ./G5/lib/opdevsdk/*.so ../packapp/yolo

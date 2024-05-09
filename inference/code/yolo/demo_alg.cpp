@@ -43,10 +43,10 @@ using namespace cv;
 // #include "opdevsdk_hikflow_custom.h"
 // #include "opencv2/opencv.hpp"
 
-void *g_model_handle = NULL;
-void *g_net_handle = NULL;
-void *g_model_buffer = NULL;
-unsigned long long g_model_phy_base = 0;
+void *g_model_handle[HIK_MODEL_NUM] = {NULL};
+void *g_net_handle[HIK_MODEL_NUM] = {NULL};
+void *g_model_buffer[HIK_MODEL_NUM] = {NULL};
+unsigned long long g_model_phy_base[HIK_MODEL_NUM] = {0};
 
 #define OPDEVSDK_CHAR 40
 #define OPDEVSDK_MODEL_INFOLEN 256
@@ -58,10 +58,10 @@ unsigned long long g_model_phy_base = 0;
 #define G5_PAGE_ALIGN (0x1000)
 
 char g_pVersion[OPDEVSDK_CHAR] = {0};
-CONFIG_DATA_T g_config_data = {0};
-OPDEVSDK_HIKFLOW_PARAM_ST g_param_info_net = {0};
-OPDEVSDK_HKA_MEM_TAB_ST g_hikflow_mem_tab[OPDEVSDK_HKA_MEM_TAB_NUM] = {0};
-OPDEVSDK_HKA_MEM_TAB_ST g_hikflow_mem_tab_model[OPDEVSDK_HKA_MEM_TAB_NUM] = {0};
+CONFIG_DATA_T g_config_data[HIK_MODEL_NUM] = {{0}};
+OPDEVSDK_HIKFLOW_PARAM_ST g_param_info_net[HIK_MODEL_NUM] = {{0}};
+OPDEVSDK_HKA_MEM_TAB_ST g_hikflow_mem_tab[OPDEVSDK_HKA_MEM_TAB_NUM][HIK_MODEL_NUM] = {{{0}}};
+OPDEVSDK_HKA_MEM_TAB_ST g_hikflow_mem_tab_model[OPDEVSDK_HKA_MEM_TAB_NUM][HIK_MODEL_NUM] = {{{0}}};
 
 ///< check error
 #define USE_DEBUG
@@ -94,7 +94,11 @@ static void print_config_data(CONFIG_DATA_T *config_data) {
   DEMOPRT((char *)"core_proc_type=%d\n", config_data->core_proc_type);
   DEMOPRT((char *)"test_data_type=%d\n", config_data->test_data_type);
   DEMOPRT((char *)"data_mem_type=%d\n", config_data->data_mem_type);
-  DEMOPRT((char *)"nnie model path:%s\n", config_data->hikflow_model_path);
+  // 根据模型数量打印模型路径
+  for (int i = 0; i < HIK_MODEL_NUM; i++) {
+    DEMOPRT((char *)"hikflow_model_path=%s\n", config_data->hikflow_model_path);
+  }
+  // DEMOPRT((char *)"nnie model path:%s\n", config_data->hikflow_model_path);
   DEMOPRT((char *)"test_image_list=%s\n", config_data->test_image_list);
   DEMOPRT((char *)"result_path=%s\n", config_data->result_path);
   DEMOPRT((char *)"n=%d\n", config_data->n);
@@ -275,15 +279,19 @@ static int check_plat_config(CONFIG_DATA_T *config_data, void *model_buffer,
     if (1 == config_data->flag_config_all_param) ///< if BIN don't carry info,
                                                  ///< AND CONFIG has all info
     {
-      DEMOPRT((char *)"WARNING: %s doesn't carry information, will choose "
-                      "CONFIG param in default.\n",
-              config_data->hikflow_model_path);
+      for (int i = 0; i < HIK_MODEL_NUM; i++) {
+        DEMOPRT((char *)"WARNING: %s doesn't carry information, will choose "
+                        "CONFIG param in default.\n",
+                config_data->hikflow_model_path);
+      }
     } else { ///<  if BIN don't carry info, MEANWHILE CONFIG hasn't all info
-      DEMOPRT(
-          (char
-               *)"ERROR: %s doesn't carry information, meanwhile your CONFIG is incomplete. please check your \
-            BIN or CONFIG.\n",
-          config_data->hikflow_model_path);
+      for (int i = 0; i < HIK_MODEL_NUM; i++) {
+        DEMOPRT(
+            (char
+                 *)"ERROR: %s doesn't carry information, meanwhile your CONFIG is incomplete. please check your \
+              BIN or CONFIG.\n",
+            config_data->hikflow_model_path);
+      }
       return -1;
     }
   }
@@ -300,7 +308,7 @@ static int check_plat_config(CONFIG_DATA_T *config_data, void *model_buffer,
  * @see
  */
 static int demo_alg_createModel(void **model_handle, CONFIG_DATA_T *config_data,
-                                void **model_buffer) {
+                                void **model_buffer, int model_num=0) {
   FILE *model_file = NULL;
   int model_size = 0;
   int demo_ret = 0;
@@ -339,7 +347,7 @@ static int demo_alg_createModel(void **model_handle, CONFIG_DATA_T *config_data,
   int buf_size;
   buf_size = OPDEVSDK_HIKFLOW_SIZE_ALIGN(model_size, G5_PAGE_ALIGN);
   // FIXME:maybe need to modify
-  ret = opdevsdk_mem_allocCache((void **)&g_model_phy_base, model_buffer,
+  ret = opdevsdk_mem_allocCache((void **)&g_model_phy_base[model_num], model_buffer,
                                 (const char *)"Model_cache", buf_size);
   if (0 != ret) {
     DEMOPRT((char *)"opdevsdk_memAllocCache failed ret=%d\n", ret);
@@ -378,7 +386,7 @@ static int demo_alg_createModel(void **model_handle, CONFIG_DATA_T *config_data,
   params_info.custom_cb.forward = (void *)Custom_Layer_Forward;
 
   ///< get memory size
-  ret = opdevsdk_hikflow_GetModelMemSize(&params_info, g_hikflow_mem_tab_model);
+  ret = opdevsdk_hikflow_GetModelMemSize(&params_info, g_hikflow_mem_tab_model[model_num]);
   if (0 != ret) {
     DEMOPRT((char *)"opdevsdk_hikflow_GetModelMemSize ret=0x%x\n", ret);
     goto err;
@@ -387,7 +395,7 @@ static int demo_alg_createModel(void **model_handle, CONFIG_DATA_T *config_data,
   }
 
   // alloc model memory
-  demo_ret = opdevsdk_hikflow_Device_Alloc_Memtab(g_hikflow_mem_tab_model,
+  demo_ret = opdevsdk_hikflow_Device_Alloc_Memtab(g_hikflow_mem_tab_model[model_num],
                                                   OPDEVSDK_HKA_MEM_TAB_NUM);
 
   if (0 != demo_ret) {
@@ -396,7 +404,7 @@ static int demo_alg_createModel(void **model_handle, CONFIG_DATA_T *config_data,
   }
 
   ///< creat model handle
-  ret = opdevsdk_hikflow_CreateModel(&params_info, g_hikflow_mem_tab_model,
+  ret = opdevsdk_hikflow_CreateModel(&params_info, g_hikflow_mem_tab_model[model_num],
                                      model_handle);
   if (0 != ret) {
     DEMOPRT((char *)"opdevsdk_hikflow_CreateModel failed. ret=0x%x\n", ret);
@@ -429,7 +437,7 @@ err:
     }
   }
 
-  opdevsdk_hikflow_Device_Free_Memtab(g_hikflow_mem_tab_model,
+  opdevsdk_hikflow_Device_Free_Memtab(g_hikflow_mem_tab_model[model_num],
                                       OPDEVSDK_HKA_MEM_TAB_NUM);
 
   if (NULL != model_file) {
@@ -450,7 +458,7 @@ err:
  */
 static int demo_alg_createHandle(CONFIG_DATA_T *config_data, void *model_handle,
                                  OPDEVSDK_HIKFLOW_PARAM_ST *param_info_net,
-                                 void **net_handle) {
+                                 void **net_handle, int model_num=0) {
 
   int ret;
   int demo_ret;
@@ -497,7 +505,7 @@ static int demo_alg_createHandle(CONFIG_DATA_T *config_data, void *model_handle,
   param_info_net->out_blob_info[0].blob_idx = 0;
 
   ///< get network operation memory
-  ret = opdevsdk_hikflow_GetMemSize(param_info_net, g_hikflow_mem_tab);
+  ret = opdevsdk_hikflow_GetMemSize(param_info_net, g_hikflow_mem_tab[model_num]);
   if (0 != ret) {
     DEMOPRT((char *)"opdevsdk_hikflow_GetMemSize ret=0x%x\n", ret);
     goto err;
@@ -506,7 +514,7 @@ static int demo_alg_createHandle(CONFIG_DATA_T *config_data, void *model_handle,
   }
 
   ///< allocate network memory
-  demo_ret = opdevsdk_hikflow_Device_Alloc_Memtab(g_hikflow_mem_tab,
+  demo_ret = opdevsdk_hikflow_Device_Alloc_Memtab(g_hikflow_mem_tab[model_num],
                                                   OPDEVSDK_HKA_MEM_TAB_NUM);
 
   if (0 != demo_ret) {
@@ -515,7 +523,7 @@ static int demo_alg_createHandle(CONFIG_DATA_T *config_data, void *model_handle,
   }
 
   ///< create network handle
-  ret = opdevsdk_hikflow_Create(param_info_net, g_hikflow_mem_tab, net_handle);
+  ret = opdevsdk_hikflow_Create(param_info_net, g_hikflow_mem_tab[model_num], net_handle);
   if (0 != ret) {
     DEMOPRT((char *)"opdevsdk_hikflow_Create ret=0x%x\n", ret);
     goto err;
@@ -536,7 +544,7 @@ err:
     }
   }
 
-  opdevsdk_hikflow_Device_Free_Memtab(g_hikflow_mem_tab,
+  opdevsdk_hikflow_Device_Free_Memtab(g_hikflow_mem_tab[model_num],
                                       OPDEVSDK_HKA_MEM_TAB_NUM);
 
   return -1;
@@ -640,7 +648,7 @@ static int demo_alg_Process(void *net_handle,
  * @see
  */
 static int parse_configure_info(char *config_file_path,
-                                CONFIG_DATA_T *config_data) {
+                                CONFIG_DATA_T *config_data, int model_num=0) {
   int res = 0;
   FILE *configure_file = NULL;
   config_data->flag_config_all_param = 1; ///< flag: config has all info ?
@@ -676,13 +684,40 @@ static int parse_configure_info(char *config_file_path,
   }
 
   ///< parse nnie model path
-  res = fscanf(configure_file, "hikflow_model_path=%s\n",
-               &config_data->hikflow_model_path[0]);
+  // 载入多个模型，模型数量由HIK_MODEL_NUM定义
+  char *model_list = (char *)malloc(DEMO_ALG_MAX_PATH_LENGTH * HIK_MODEL_NUM);
+  res = fscanf(configure_file, HIK_MODEL_KEY, model_list);
+  DEMOPRT((char *)"model_list: %s\n", model_list);
   if (1 != res) {
-    DEMOPRT((char *)"Error: There is no 'hikflow_model_path' in your config, "
-                    "This param must have.\n");
+    DEMOPRT((char *)"Error: There is no '%s' in your config, "
+                    "This param must have.\n", HIK_MODEL_KEY);
     return -1;
   }
+
+  char *split_model_file = strtok(model_list, ",");
+  int i = 0;
+
+  while (split_model_file != NULL) {
+    if (i == model_num) {
+      DEMOPRT((char *)"split_model_file->%d: %s\n", i, split_model_file);
+      strcpy(config_data->hikflow_model_path, split_model_file);
+    }
+    split_model_file = strtok(NULL, ",");
+    i++;
+  }
+  free(model_list);
+  if (i != HIK_MODEL_NUM) {
+    DEMOPRT((char *)"Error: The number of model path is not equal to %d\n", HIK_MODEL_NUM);
+    return -1;
+  }
+
+  // res = fscanf(configure_file, "hikflow_model_path=%s\n",
+  //              &config_data->hikflow_model_path[0]);
+  // if (1 != res) {
+  //   DEMOPRT((char *)"Error: There is no 'hikflow_model_path' in your config, "
+  //                   "This param must have.\n");
+  //   return -1;
+  // }
 
   ///< parse test images path
   res = fscanf(configure_file, "test_image_list=%s\n",
@@ -726,24 +761,36 @@ static int parse_configure_info(char *config_file_path,
   fclose(configure_file);
   configure_file = NULL;
 
+  DEMOPRT((char*)"parse done!");
+
   return 0;
 }
 
 int demo_alg_init(char *config_file_path) {
   int ret = 0;
-  if (parse_configure_info(config_file_path, &g_config_data) != 0) {
-    DEMOPRT((char *)"parse configure info failed\n");
-    return -1;
+  DEMOPRT((char *)"start parse\n");
+  for (int i = 0; i < HIK_MODEL_NUM; i++) {
+    if (parse_configure_info(config_file_path, &g_config_data[i], i) != 0) {
+      DEMOPRT((char *)"parse configure info failed\n");
+      return -1;
+    }
   }
 
+  // FIXME:
   ///< load model
-  ret = demo_alg_createModel(&g_model_handle, &g_config_data, &g_model_buffer);
-  OPDEVSDK_HIKFLOW_CHECK_ERROR((OPDEVSDK_S_OK != ret),
-                               "demo_alg_init: demo_alg_createModel error", -1);
+  for (int i = 0; i < HIK_MODEL_NUM; i++) {
+    ret = demo_alg_createModel(&g_model_handle[i], &g_config_data[i], &g_model_buffer[i], i);
+    OPDEVSDK_HIKFLOW_CHECK_ERROR((OPDEVSDK_S_OK != ret),
+                                 "demo_alg_init: demo_alg_createModel error", -1);
+  }
 
   ///< creat handle
-  ret = demo_alg_createHandle(&g_config_data, g_model_handle, &g_param_info_net,
-                              &g_net_handle);
+  for (int i = 0; i < HIK_MODEL_NUM; i++) {
+    ret = demo_alg_createHandle(&g_config_data[i], g_model_handle[i], &g_param_info_net[i], &g_net_handle[i], i);
+    OPDEVSDK_HIKFLOW_CHECK_ERROR(
+        (OPDEVSDK_S_OK != ret), "demo_alg_init: demo_alg_createHandle error", -1);
+  }
+
   OPDEVSDK_HIKFLOW_CHECK_ERROR(
       (OPDEVSDK_S_OK != ret), "demo_alg_init: demo_alg_createHandle error", -1);
   return OPDEVSDK_S_OK;
@@ -768,8 +815,9 @@ int demo_alg_proc_fromCamera(OPDEVSDK_VIDEO_FRAME_INFO_ST *pfrm,
   OPDEVSDK_HIKFLOW_FORWARD_OUT_INFO_ST hkann_out = {0};
   memset(&hkann_out, 0, sizeof(OPDEVSDK_HIKFLOW_FORWARD_OUT_INFO_ST));
 
-  ret = demo_alg_Process(g_net_handle, &g_param_info_net, &hkann_out,
-                         &g_config_data, pfrm->yuvFrame.pVirAddr[0], 1, &total);
+  // 修改:[0]为yolo模型
+  ret = demo_alg_Process(g_net_handle[0], &g_param_info_net[0], &hkann_out,
+                         &g_config_data[0], pfrm->yuvFrame.pVirAddr[0], 1, &total);
   if (OPDEVSDK_S_OK != ret) {
     DEMOPRT((char *)"demo_alg_Process error= 0x%x \n", ret);
     goto err;
@@ -825,25 +873,25 @@ int demo_alg_proc_fromCamera(OPDEVSDK_VIDEO_FRAME_INFO_ST *pfrm,
       ptarget->tgtList.pTgt[n].trace_time = 0;
       ptarget->tgtList.pTgt[n].color = 0;
       ptarget->tgtList.pTgt[n].region.point[0].x =
-          box_info->bbox.x / g_config_data.w;
+          box_info->bbox.x / g_config_data[0].w;
       ptarget->tgtList.pTgt[n].region.point[0].y =
-          box_info->bbox.y / g_config_data.h;
+          box_info->bbox.y / g_config_data[0].h;
       ptarget->tgtList.pTgt[n].region.point[1].x =
-          box_info->bbox.x / g_config_data.w +
-          box_info->bbox.w / g_config_data.w;
+          box_info->bbox.x / g_config_data[0].w +
+          box_info->bbox.w / g_config_data[0].w;
       ptarget->tgtList.pTgt[n].region.point[1].y =
-          box_info->bbox.y / g_config_data.h;
+          box_info->bbox.y / g_config_data[0].h;
       ptarget->tgtList.pTgt[n].region.point[2].x =
-          box_info->bbox.x / g_config_data.w +
-          box_info->bbox.w / g_config_data.w;
+          box_info->bbox.x / g_config_data[0].w +
+          box_info->bbox.w / g_config_data[0].w;
       ptarget->tgtList.pTgt[n].region.point[2].y =
-          box_info->bbox.y / g_config_data.h +
-          box_info->bbox.h / g_config_data.h;
+          box_info->bbox.y / g_config_data[0].h +
+          box_info->bbox.h / g_config_data[0].h;
       ptarget->tgtList.pTgt[n].region.point[3].x =
-          box_info->bbox.x / g_config_data.w;
+          box_info->bbox.x / g_config_data[0].w;
       ptarget->tgtList.pTgt[n].region.point[3].y =
-          box_info->bbox.y / g_config_data.h +
-          box_info->bbox.h / g_config_data.h;
+          box_info->bbox.y / g_config_data[0].h +
+          box_info->bbox.h / g_config_data[0].h;
       // DEMOPRT((char*)"n %d alg_w %d alg_h %d x %f y %f w %f h %f  target num
       // %d\n",
       //     n, g_config_data.w, g_config_data.h, box_info->bbox.x,
@@ -856,30 +904,31 @@ int demo_alg_proc_fromCamera(OPDEVSDK_VIDEO_FRAME_INFO_ST *pfrm,
 
   int ert;
 err:
-
   ///< release network
-  if (NULL != g_net_handle) {
-    ert = opdevsdk_hikflow_Release(g_net_handle);
-    if (0 != ert) {
-      DEMOPRT((char *)"opdevsdk_hikflow_Release ret=0x%x\n", ert);
+  for (int i = 0; i < HIK_MODEL_NUM; i++) {
+    if (NULL != g_net_handle[i]) {
+      ert = opdevsdk_hikflow_Release(g_net_handle);
+      if (i != ert) {
+        DEMOPRT((char *)"opdevsdk_hikflow_Release ret=0x%x\n", ert);
+      }
     }
-  }
 
-  ///< release model
-  if (NULL != g_model_handle) {
-    ert = opdevsdk_hikflow_ReleaseModel(g_model_handle);
-    if (0 != ert) {
-      DEMOPRT((char *)"opdevsdk_hikflow_ReleaseModel ret=0x%x\n", ert);
+    ///< release model
+    if (NULL != g_model_handle[i]) {
+      ert = opdevsdk_hikflow_ReleaseModel(g_model_handle);
+      if (i != ert) {
+        DEMOPRT((char *)"opdevsdk_hikflow_ReleaseModel ret=0x%x\n", ert);
+      }
     }
-  }
 
-  opdevsdk_hikflow_Device_Free_Memtab(g_hikflow_mem_tab_model,
-                                      OPDEVSDK_HKA_MEM_TAB_NUM);
-  opdevsdk_hikflow_Device_Free_Memtab(g_hikflow_mem_tab,
-                                      OPDEVSDK_HKA_MEM_TAB_NUM);
+    opdevsdk_hikflow_Device_Free_Memtab(g_hikflow_mem_tab_model[i],
+                                        OPDEVSDK_HKA_MEM_TAB_NUM);
+    opdevsdk_hikflow_Device_Free_Memtab(g_hikflow_mem_tab[i],
+                                        OPDEVSDK_HKA_MEM_TAB_NUM);
 
-  if (NULL != g_model_buffer) {
-    opdevsdk_mem_free((void *)(PTR_VOID)g_model_phy_base, g_model_buffer);
+    if (NULL != g_model_buffer[i]) {
+      opdevsdk_mem_free((void *)(PTR_VOID)g_model_phy_base, g_model_buffer);
+    }
   }
 
   return -1;
@@ -913,9 +962,9 @@ int demo_alg_proc_fromFile() {
   float im_info[3];
   int n = 0, c = 0, h = 0, w = 0;
   unsigned long long phy_base = 0;
-  test_file = fopen(g_config_data.test_image_list, "rb");
+  test_file = fopen(g_config_data[0].test_image_list, "rb");
   if (NULL == test_file) {
-    DEMOPRT((char *)"fopen %s failed\n", g_config_data.test_image_list);
+    DEMOPRT((char *)"fopen %s failed\n", g_config_data[0].test_image_list);
     goto err;
   }
 
@@ -927,15 +976,15 @@ int demo_alg_proc_fromFile() {
   DEMOPRT((char *)"total_pic_num:%d\n", total_pic_num);
 
   ///< allocate input images memory
-  if (g_param_info_net.in_blob_param[0].src_format ==
+  if (g_param_info_net[0].in_blob_param[0].src_format ==
       OPDEVSDK_HKA_BGR) ///< bgr format memory size
   {
     data_size =
-        g_config_data.n * g_config_data.w * g_config_data.c * g_config_data.h;
+        g_config_data[0].n * g_config_data[0].w * g_config_data[0].c * g_config_data[0].h;
   } else ///< nv21 or nv12 format memory size
   {
-    data_size = g_config_data.n * g_config_data.w *
-                (g_config_data.h + (g_config_data.h >> 1));
+    data_size = g_config_data[0].n * g_config_data[0].w *
+                (g_config_data[0].h + (g_config_data[0].h >> 1));
   }
 
   // FIXME: maybe need to modify
@@ -950,11 +999,11 @@ int demo_alg_proc_fromFile() {
   char res_file_name[256];
   memset(res_file_name, 0, 256);
 
-  for (j = 0; j < total_pic_num; j = j + g_config_data.n) {
+  for (j = 0; j < total_pic_num; j = j + g_config_data[0].n) {
     data_temp = (unsigned char *)test_img_data;
     current_processing_pic = data_temp;
 
-    for (k = 0; k < g_config_data.n; k++) {
+    for (k = 0; k < g_config_data[0].n; k++) {
       if ((j + k) >= total_pic_num) {
         DEMOPRT((char *)"all pic has process.\n");
         break;
@@ -973,12 +1022,12 @@ int demo_alg_proc_fromFile() {
       fseek(pic_file, 0, SEEK_SET);
 
       ///< read bgr images
-      if (g_param_info_net.in_blob_param[0].src_format == OPDEVSDK_HKA_BGR) {
-        data_size = g_config_data.c * g_config_data.h * g_config_data.w;
+      if (g_param_info_net[0].in_blob_param[0].src_format == OPDEVSDK_HKA_BGR) {
+        data_size = g_config_data[0].c * g_config_data[0].h * g_config_data[0].w;
       } else ///< read nv21 images
       {
         data_size =
-            (g_config_data.h + (g_config_data.h >> 1)) * g_config_data.w;
+            (g_config_data[0].h + (g_config_data[0].h >> 1)) * g_config_data[0].w;
       }
       fread(data_temp, data_size, 1, pic_file);
       data_temp += data_size;
@@ -989,8 +1038,8 @@ int demo_alg_proc_fromFile() {
       }
     }
 
-    ret = demo_alg_Process(g_net_handle, &g_param_info_net, &hkann_out,
-                           &g_config_data, test_img_data, k, &total);
+    ret = demo_alg_Process(g_net_handle[0], &g_param_info_net[0], &hkann_out,
+                           &g_config_data[0], test_img_data, k, &total);
     if (ret != 0) {
       DEMOPRT((char *)"demo_alg_Process error= 0x%x \n", ret);
       goto err;
@@ -1099,19 +1148,21 @@ int demo_alg_proc_fromFile() {
 
 err:
   ///< release network
-  if (NULL != g_net_handle) {
-    ret = opdevsdk_hikflow_Release(g_net_handle);
+  for (int i = 0; i < HIK_MODEL_NUM; i++) {
+    if (NULL != g_net_handle[i]) {
+      ret = opdevsdk_hikflow_Release(g_net_handle[i]);
 
-    if (0 != ret) {
-      DEMOPRT((char *)"opdevsdk_hikflow_Release ret=0x%x\n", ret);
+      if (0 != ret) {
+        DEMOPRT((char *)"opdevsdk_hikflow_Release ret=0x%x\n", ret);
+      }
     }
-  }
 
-  ///< release model
-  if (NULL != g_model_handle) {
-    ret = opdevsdk_hikflow_ReleaseModel(g_model_handle);
-    if (0 != ret) {
-      DEMOPRT((char *)"opdevsdk_hikflow_ReleaseModel ret=0x%x\n", ret);
+    ///< release model
+    if (NULL != g_model_handle[i]) {
+      ret = opdevsdk_hikflow_ReleaseModel(g_model_handle[i]);
+      if (0 != ret) {
+        DEMOPRT((char *)"opdevsdk_hikflow_ReleaseModel ret=0x%x\n", ret);
+      }
     }
   }
 
@@ -1143,16 +1194,19 @@ err:
 int demo_alg_deinit() {
   int hikflow_ret = 0;
 
-  ///< release net resource
-  if (NULL != g_net_handle) {
-    hikflow_ret = opdevsdk_hikflow_Release(g_net_handle);
-    DEMOPRT((char *)"HIK_ALG_ReleaseHandle ret=0x%x\n", hikflow_ret);
-  }
+  for (int i = 0; i < HIK_MODEL_NUM; i++) {
+    ///< release network
+    if (NULL != g_net_handle[i]) {
+      hikflow_ret = opdevsdk_hikflow_Release(g_net_handle[i]);
+      DEMOPRT((char *)"HIK_ALG_ReleaseHandle ret=0x%x\n", hikflow_ret);
+    }
 
-  ///< release model
-  if (NULL != g_model_handle) {
-    hikflow_ret = opdevsdk_hikflow_ReleaseModel(g_model_handle);
-    DEMOPRT((char *)"HIK_ALG_ReleaseModel ret=0x%x\n", hikflow_ret);
+    ///< release model
+    if (NULL != g_model_handle[i]) {
+      hikflow_ret = opdevsdk_hikflow_ReleaseModel(g_model_handle[i]);
+      DEMOPRT((char *)"HIK_ALG_ReleaseModel ret=0x%x\n", hikflow_ret);
+    }
+
   }
 
   return OPDEVSDK_S_OK;
@@ -1165,25 +1219,29 @@ int demo_alg_deinit() {
  * @see
  */
 int demo_alg_releaseBuffer() {
-  opdevsdk_hikflow_Device_Free_Memtab(g_hikflow_mem_tab_model,
-                                      OPDEVSDK_HKA_MEM_TAB_NUM);
-  opdevsdk_hikflow_Device_Free_Memtab(g_hikflow_mem_tab,
-                                      OPDEVSDK_HKA_MEM_TAB_NUM);
+  for (int i = 0; i < HIK_MODEL_NUM; i++) {
+    opdevsdk_hikflow_Device_Free_Memtab(g_hikflow_mem_tab_model[i],
+                                        OPDEVSDK_HKA_MEM_TAB_NUM);
+    opdevsdk_hikflow_Device_Free_Memtab(g_hikflow_mem_tab[i],
+                                        OPDEVSDK_HKA_MEM_TAB_NUM);
 
-  if (g_model_buffer != NULL) {
-    opdevsdk_mem_free((void *)(PTR_VOID)g_model_phy_base, g_model_buffer);
-    g_model_buffer = NULL;
-    DEMOPRT((char *)"free g_model_buffer\n");
+    if (g_model_buffer[i] != NULL) {
+      opdevsdk_mem_free((void *)(PTR_VOID)g_model_phy_base[i], g_model_buffer[i]);
+      g_model_buffer[i] = NULL;
+      DEMOPRT((char *)"free g_model_buffer\n");
+    }
   }
+
   return OPDEVSDK_S_OK;
 }
 
+// TODO: 哪里用到这个函数了？
 int demo_alg_get_res(int *alg_w, int *alg_h) {
   if (NULL == alg_w || NULL == alg_h) {
     DEMOPRT((char *)"free g_model_buffer\n");
     return -1;
   }
-  *alg_w = g_config_data.w;
-  *alg_h = g_config_data.h;
+  *alg_w = g_config_data[0].w;
+  *alg_h = g_config_data[0].h;
   return OPDEVSDK_S_OK;
 }

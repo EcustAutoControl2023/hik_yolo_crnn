@@ -22,6 +22,7 @@
  *****************************************************************************/
 
 // #include <cstring>
+#include <cstdlib>
 #include <stdio.h>
 #include <sys/time.h>
 
@@ -98,10 +99,7 @@ static void print_config_data(CONFIG_DATA_T *config_data) {
   DEMOPRT((char *)"core_proc_type=%d\n", config_data->core_proc_type);
   DEMOPRT((char *)"test_data_type=%d\n", config_data->test_data_type);
   DEMOPRT((char *)"data_mem_type=%d\n", config_data->data_mem_type);
-  // 根据模型数量打印模型路径
-  for (int i = 0; i < HIK_MODEL_NUM; i++) {
-    DEMOPRT((char *)"hikflow_model_path=%s\n", config_data->hikflow_model_path);
-  }
+  DEMOPRT((char *)"hikflow_model_path=%s\n", config_data->hikflow_model_path);
   // DEMOPRT((char *)"nnie model path:%s\n", config_data->hikflow_model_path);
   DEMOPRT((char *)"test_image_list=%s\n", config_data->test_image_list);
   DEMOPRT((char *)"result_path=%s\n", config_data->result_path);
@@ -1100,7 +1098,17 @@ int demo_alg_proc_fromFile() {
       DEMOPRT((char *)"h       = %f\n", box_info->bbox.h);
       DEMOPRT((char *)"batch   = %f\n", box_info->batch_idx);
 
-      Mat rawToMat = Mat(640, 640, CV_8UC3, (uchar *)current_processing_pic);
+
+      unsigned char* current_processing_pic_bgr = (unsigned char*)malloc(640 * 640 * 3); 
+
+      for (int i = 0; i < 640 * 640; i++) {
+        current_processing_pic_bgr[i * 3] = current_processing_pic[i];
+        current_processing_pic_bgr[i * 3 + 1] = current_processing_pic[i + 640 * 640];
+        current_processing_pic_bgr[i * 3 + 2] = current_processing_pic[i + 640 * 640 * 2];
+      }
+
+      Mat rawToMat = Mat(640, 640, CV_8UC3, (uchar *)current_processing_pic_bgr);
+      // Mat rawToMat = Mat(640, 640, CV_8UC3, (uchar *)current_processing_pic);
       float x_min = box_info->bbox.x;
       float y_min = box_info->bbox.y;
       float x_max = box_info->bbox.x + box_info->bbox.w;
@@ -1113,7 +1121,7 @@ int demo_alg_proc_fromFile() {
       Mat plate =
           rawToMat(Rect(x_min, y_min, x_max - x_min + 1, y_max - y_min + 1));
       // 符合CRNN模型输入的尺寸
-      Mat plate_resize = Mat::zeros(Size(168, 48), plate.type());
+      Mat plate_resize = Mat::zeros(48, 168, plate.type());
 
       // 计算截取的车牌的宽高比
       double aspect_ratio = static_cast<double>(plate.cols) / plate.rows;
@@ -1137,10 +1145,19 @@ int demo_alg_proc_fromFile() {
       DEMOPRT((char *)"plate_resize width = %d\n", plate_resize.cols);
       DEMOPRT((char *)"plate_resize height = %d\n", plate_resize.rows);
 
-      unsigned char* plate_data = (unsigned char*)plate_resize.data;
+      imwrite("plate.png", plate_resize);
+
+      unsigned char *plate_data_bgr_ori = (unsigned char *)malloc(168 * 48 * 3);
+      for (int i = 0; i < 168 * 48; i++) {
+        // bgr_ori means [b,g,r,b,g,r,...] to [b,b,b,g,g,g,r,r,r,...]
+        plate_data_bgr_ori[i] = plate_resize.data[i * 3];
+        plate_data_bgr_ori[i + 168*48] = plate_resize.data[i * 3 + 1];
+        plate_data_bgr_ori[i + 168*48*2] = plate_resize.data[i * 3 + 2];
+      }
 
       ret = demo_alg_Process(g_net_handle[1], &g_param_info_net[1], &hkann_out[1],
-                             &g_config_data[1], plate_data, 1, &total[1]);
+                             &g_config_data[1], plate_data_bgr_ori, k, &total[1]);
+
       if (ret != 0) {
         DEMOPRT((char *)"demo_alg_Process error= 0x%x \n", ret);
         goto err;
@@ -1163,6 +1180,8 @@ int demo_alg_proc_fromFile() {
       DEMOPRT((char *)"车牌号为：%s\n", palte_name);
 
       free(palte_name);
+      free(current_processing_pic_bgr);
+      free(plate_data_bgr_ori);
     }
 
     DEMOPRT((char *)"----------------------------------------------------------"

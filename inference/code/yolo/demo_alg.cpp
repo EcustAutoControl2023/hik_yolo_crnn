@@ -33,6 +33,7 @@
 #include "opdevsdk_hka_types.h"
 #include "opdevsdk_mem.h"
 #include "plate_rec.h"
+#include "hikflow_pre_imgs.h"
 
 #define _CRT_SECURE_NO_WARNINGS
 // #include <iostream>
@@ -954,7 +955,7 @@ int demo_alg_proc_fromFile() {
   }
 
   FILE *test_file = NULL;
-  void *test_img_data = NULL;
+  void *test_img_data[HIK_MODEL_NUM] = { NULL };
   char file_name[256] = {'\0'};
   int total_pic_num = 0;
   unsigned char *data_temp = NULL;
@@ -966,7 +967,7 @@ int demo_alg_proc_fromFile() {
   int blob_count = 0;
   float im_info[3];
   int n = 0, c = 0, h = 0, w = 0;
-  unsigned long long phy_base = 0;
+  unsigned long long phy_base[HIK_MODEL_NUM] = {0};
   test_file = fopen(g_config_data[0].test_image_list, "rb");
   if (NULL == test_file) {
     DEMOPRT((char *)"fopen %s failed\n", g_config_data[0].test_image_list);
@@ -993,7 +994,7 @@ int demo_alg_proc_fromFile() {
   }
 
   // FIXME: maybe need to modify
-  ret = opdevsdk_mem_allocCache((void **)&phy_base, (void **)&(test_img_data),
+  ret = opdevsdk_mem_allocCache((void **)&phy_base[0], (void **)&(test_img_data[0]),
                                 (const char *)"mmcache", data_size);
   if (0 != ret) {
     DEMOPRT((char *)"opdevsdk_memAllocCache failed ret=%d\n", ret);
@@ -1005,7 +1006,7 @@ int demo_alg_proc_fromFile() {
   memset(res_file_name, 0, 256);
 
   for (j = 0; j < total_pic_num; j = j + g_config_data[0].n) {
-    data_temp = (unsigned char *)test_img_data;
+    data_temp = (unsigned char *)test_img_data[0];
     current_processing_pic = data_temp;
 
     for (k = 0; k < g_config_data[0].n; k++) {
@@ -1044,7 +1045,7 @@ int demo_alg_proc_fromFile() {
     }
 
     ret = demo_alg_Process(g_net_handle[0], &g_param_info_net[0], &hkann_out[0],
-                           &g_config_data[0], test_img_data, k, &total[0]);
+                           &g_config_data[0], test_img_data[0], k, &total[0]);
     if (ret != 0) {
       DEMOPRT((char *)"demo_alg_Process error= 0x%x \n", ret);
       goto err;
@@ -1147,16 +1148,32 @@ int demo_alg_proc_fromFile() {
 
       imwrite("plate.png", plate_resize);
 
-      unsigned char *plate_data_bgr_ori = (unsigned char *)malloc(168 * 48 * 3);
-      for (int i = 0; i < 168 * 48; i++) {
-        // bgr_ori means [b,g,r,b,g,r,...] to [b,b,b,g,g,g,r,r,r,...]
-        plate_data_bgr_ori[i] = plate_resize.data[i * 3];
-        plate_data_bgr_ori[i + 168*48] = plate_resize.data[i * 3 + 1];
-        plate_data_bgr_ori[i + 168*48*2] = plate_resize.data[i * 3 + 2];
+      Mat preprocessed_plate;
+      mat_to_bgr_planner(&preprocessed_plate, "./plate.png", "./plate.bgr", true, true, &g_config_data[1]);
+
+
+      FILE* plate_pic_file = fopen("./plate.bgr", "rb");
+      int plate_data_size = g_config_data[1].w * g_config_data[1].h * g_config_data[1].c;
+
+      ret = opdevsdk_mem_allocCache((void **)&phy_base[1], (void **)&(test_img_data[1]), (const char *)"mmcache", plate_data_size);
+
+      if (0 != ret) {
+        DEMOPRT((char *)"opdevsdk_memAllocCache failed ret=%d\n", ret);
+        goto err;
+      }
+
+      unsigned char* plate_data_temp = (unsigned char*)test_img_data[1];
+
+      fseek(plate_pic_file, 0, SEEK_SET);
+      fread(plate_data_temp, plate_data_size, 1, plate_pic_file);
+
+      if (NULL != plate_pic_file) {
+        fclose(plate_pic_file);
+        plate_pic_file = NULL;
       }
 
       ret = demo_alg_Process(g_net_handle[1], &g_param_info_net[1], &hkann_out[1],
-                             &g_config_data[1], plate_data_bgr_ori, k, &total[1]);
+                             &g_config_data[1], test_img_data[1], k, &total[1]);
 
       if (ret != 0) {
         DEMOPRT((char *)"demo_alg_Process error= 0x%x \n", ret);
@@ -1181,7 +1198,7 @@ int demo_alg_proc_fromFile() {
 
       free(palte_name);
       free(current_processing_pic_bgr);
-      free(plate_data_bgr_ori);
+      free(plate_data_temp);
     }
 
     DEMOPRT((char *)"----------------------------------------------------------"
@@ -1210,13 +1227,13 @@ err:
         DEMOPRT((char *)"opdevsdk_hikflow_ReleaseModel ret=0x%x\n", ret);
       }
     }
+
+    if (NULL != test_img_data[i]) {
+      opdevsdk_mem_free((void *)(PTR_VOID)phy_base[0], test_img_data[i]);
+    }
   }
 
   demo_alg_releaseBuffer();
-
-  if (NULL != test_img_data) {
-    opdevsdk_mem_free((void *)(PTR_VOID)phy_base, test_img_data);
-  }
 
   if (NULL != test_file) {
     fclose(test_file);

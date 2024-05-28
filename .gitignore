@@ -3,6 +3,7 @@ bin/
 lib/
 data/
 yolomodel
+crnnmodel
 *.c_bak
 tmp/
 tmp_images/

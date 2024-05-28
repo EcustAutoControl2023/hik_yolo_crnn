@@ -11,3 +11,5 @@ plate_ref_img_dir/10.jpg
 plate_ref_img_dir/11.jpg
 plate_ref_img_dir/12.jpg
 plate_ref_img_dir/13.jpg
+plate_ref_img_dir/14.jpg
+plate_ref_img_dir/15.png

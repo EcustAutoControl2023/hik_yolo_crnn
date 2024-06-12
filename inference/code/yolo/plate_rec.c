@@ -7,6 +7,7 @@
 #include <string.h>
 
 
+#include "demo_comm.h"
 #include "opdevsdk_hikflow_dev_man.h"
 #include "opdevsdk_mem.h"
 #include "opdevsdk_hka_types.h"
@@ -62,7 +63,7 @@ char *parsePlateName(float **input, int length)
     int maxIndex_offset1 = 0;
     int maxIndex_offset2 = 0;
     int offset = 0;
-    int flag = 0;
+    int flag = 1;
     char *pName = (char *)malloc(length * sizeof(char) * 3);
     // 全部初始化为0
     memset(pName, 0, length * sizeof(char) * 3);
@@ -70,21 +71,17 @@ char *parsePlateName(float **input, int length)
     for (int i = 0; i < length; i++)
     {
         maxIndex = argMax((float*)input[i], 78) * 3;
-        if ((plateName[maxIndex] == '#') || (pName[offset - 1] == plateName[maxIndex]) || (pName[offset - 1] == plateName[maxIndex + 2] && pName[offset - 2] == plateName[maxIndex + 1] && pName[offset - 3] == plateName[maxIndex]))
-        {
-            if (plateName[maxIndex] == '#')
-            {
-                flag = 1;
-                continue;
-            }
 
-            if (flag == 0)
-                continue;
-            else
-            {
-                flag = 0;
-            }
+        if (plateName[maxIndex] == '#') 
+        {
+            flag = 1;
+            continue;
         }
+        else if (flag == 0 && ((pName[offset - 1] == plateName[maxIndex]) || (pName[offset - 1] == plateName[maxIndex + 2] && pName[offset - 2] == plateName[maxIndex + 1] && pName[offset - 3] == plateName[maxIndex])))
+            continue;
+
+        flag = 0;
+
         pName[offset++] = plateName[maxIndex];
 
         maxIndex_offset1 = maxIndex + 1;
@@ -97,6 +94,7 @@ char *parsePlateName(float **input, int length)
             continue;
         pName[offset++] = plateName[maxIndex + 2];
     }
+    DEMOPRT((char*)"\n");
     return pName;
 }
 

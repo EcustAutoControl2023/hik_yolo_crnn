@@ -1,1 +1,10 @@
-car_ref_img_dir/1.jpg
+car_ref_img_dir/1.png
+car_ref_img_dir/2.png
+car_ref_img_dir/3.jpg
+car_ref_img_dir/4.png
+car_ref_img_dir/62.jpg
+car_ref_img_dir/65.jpg
+car_ref_img_dir/66.jpg
+car_ref_img_dir/67.jpg
+car_ref_img_dir/68.jpg
+car_ref_img_dir/71.jpg

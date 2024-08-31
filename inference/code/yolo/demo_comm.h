@@ -38,7 +38,7 @@ void demo_syslog_print(char *format, ...);
 * @brief demo buffer number
 */
 #define DEMO_MAX_BUF_COUNT                            (3)
-#define DEMO_MAX_ALG_BUF_COUNT                        (8)
+#define DEMO_MAX_ALG_BUF_COUNT                        (2)
 
 
 /**

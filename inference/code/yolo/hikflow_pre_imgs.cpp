@@ -1,5 +1,6 @@
 #include <math.h>
 #include "hikflow_pre_imgs.h"
+#include "demo_comm.h"
 
 
 void letterbox(
@@ -144,4 +145,46 @@ void mat_to_bgr_planner(
 
   fclose(file);
 
+}
+
+void jpg2nv12(
+  cv::Mat *img, 
+  const char *img_path, 
+  const char *nv12_path, 
+  bool size_change, 
+  CONFIG_DATA_T *config_data
+)
+{
+  _resize_img(img, img_path, size_change, config_data);
+  int height = img->rows;
+  int width = img->cols;
+  if ((height % 2 != 0) || (width % 2 != 0))
+  {
+    DEMOPRT((char*)"nv12 not support odd image size!");
+  }
+
+  cv::cvtColor(*img, *img, cv::COLOR_BGR2YUV_I420);
+
+  *img = img->reshape(1, 1);
+
+  DEMOPRT((char*)"img length: %d", img->cols * img->rows * img->channels());
+  
+  // y_len 为yuv的长度
+  int y_len = height * width * 3 / 2;
+  int y_end = y_len / 3 * 2;
+  DEMOPRT((char *)"y_len: %d, y_end: %d\n", y_len, y_end);
+
+  cv::Mat uv_mat = img->colRange(y_end, y_len);
+  uv_mat = uv_mat.reshape(2, (y_len - y_end) / 2);
+  DEMOPRT((char*)"uvmat length: %d\n", uv_mat.cols * uv_mat.rows * uv_mat.channels());
+  uv_mat = uv_mat.t();
+  uv_mat = uv_mat.reshape(1, 1);
+  DEMOPRT((char*)"uvmat length: %d\n", uv_mat.cols * uv_mat.rows * uv_mat.channels());
+
+  uv_mat.copyTo(img->colRange(y_end, y_len));
+
+  // 直接写入文件
+  FILE *file = fopen(nv12_path, "w");
+  for (int i=0; i < y_len; i++)
+    fprintf(file, "%c", (unsigned char)img->data[i]);
 }

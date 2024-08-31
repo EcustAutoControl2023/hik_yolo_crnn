@@ -10,7 +10,7 @@ class YoloV5_s6_Region(nn.Module):
         super(YoloV5_s6_Region, self).__init__()
         self.num_anchors = 3
         self.num_classes = 1
-        self.conf_thresh = 0.5
+        self.conf_thresh = 0.3
         self.nms_thresh = 0.5
 
     @ModelChecker.function_decorator

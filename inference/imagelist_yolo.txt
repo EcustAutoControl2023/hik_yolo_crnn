@@ -1,1 +1,10 @@
-./data/1.bgr
+./data/1.nv12
+./data/2.nv12
+./data/3.nv12
+./data/4.nv12
+./data/62.nv12
+./data/65.nv12
+./data/66.nv12
+./data/67.nv12
+./data/68.nv12
+./data/71.nv12

@@ -760,7 +760,8 @@ int YoloV5_s6_Region_Forward(float *y1, int in1_n, int in1_c, int in1_h, int in1
     float *blob_data[YOLOV5_NMS_BLOB_NUM] = {0};
     int blob_shape[YOLOV5_NMS_BLOB_NUM][4] = {0};
 
-#if TEST_YLOUT_PRINT
+// #if TEST_YLOUT_PRINT
+#if 1
     printf("num_anchors: %d num_classes: %d\n", num_anchors, num_classes);
     printf("conf_thresh: %f nms_thresh: %f\n", conf_thresh, nms_thresh);
 #endif
@@ -832,7 +833,8 @@ int YoloV5_s6_Region_Forward(float *y1, int in1_n, int in1_c, int in1_h, int in1
 #endif
 
         ///< get all detection result
-        real_bbx_num = get_region_detections(width, height, conf_thresh, blob_data[blob_count], blob_shape[blob_count], anchor_num, class_num, detections_data + total_raw_bbx_num, &real_bbx_num);
+        // real_bbx_num = get_region_detections(width, height, conf_thresh, blob_data[blob_count], blob_shape[blob_count], anchor_num, class_num, detections_data + total_raw_bbx_num, &real_bbx_num);
+        real_bbx_num = get_region_detections(width, height, 0.3, blob_data[blob_count], blob_shape[blob_count], anchor_num, class_num, detections_data + total_raw_bbx_num, &real_bbx_num);
 
 #if TEST_YLOUT_TIME
         gettimeofday(&tv, NULL);
@@ -897,7 +899,8 @@ int YoloV5_s6_Region_Forward(float *y1, int in1_n, int in1_c, int in1_h, int in1
     }
 
     ///< get final dectection result relative to the test image size
-    draw_detections_output((POST_PROC_DET_STACK_T *)detections_data, total_bbx_num, conf_thresh, class_num, width, height, output, &output_num);
+    // draw_detections_output((POST_PROC_DET_STACK_T *)detections_data, total_bbx_num, conf_thresh, class_num, width, height, output, &output_num);
+    draw_detections_output((POST_PROC_DET_STACK_T *)detections_data, total_bbx_num, 0.3, class_num, width, height, output, &output_num);
 
 #if TEST_YLOUT_PRINT
     YOLO_REGION_OUTPUT_T *test = (YOLO_REGION_OUTPUT_T *)output;

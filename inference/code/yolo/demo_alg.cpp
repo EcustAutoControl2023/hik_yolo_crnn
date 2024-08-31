@@ -22,9 +22,12 @@
  *****************************************************************************/
 
 // #include <cstring>
+#include <bits/types/struct_timeval.h>
 #include <cstdlib>
 #include <stdio.h>
 #include <sys/time.h>
+#include <vector>
+
 
 #include "custom_callback.h"
 #include "demo_alg.h"
@@ -34,11 +37,14 @@
 #include "opdevsdk_mem.h"
 #include "plate_rec.h"
 #include "hikflow_pre_imgs.h"
+#include "plate_trans.h"
 
 #define _CRT_SECURE_NO_WARNINGS
 // #include <iostream>
+#include <opencv2/core/hal/interface.h>
 #include <opencv2/highgui.hpp>
-#include <opencv2/imgproc.hpp>
+#include <opencv2/imgcodecs.hpp>
+#include <opencv2/opencv.hpp>
 #include <string>
 
 using namespace cv;
@@ -53,6 +59,7 @@ void *g_model_handle[HIK_MODEL_NUM] = {NULL};
 void *g_net_handle[HIK_MODEL_NUM] = {NULL};
 void *g_model_buffer[HIK_MODEL_NUM] = {NULL};
 unsigned long long g_model_phy_base[HIK_MODEL_NUM] = {0};
+int g_debug_pic_num = 0; ///< debug picture number
 
 #define OPDEVSDK_CHAR 40
 #define OPDEVSDK_MODEL_INFOLEN 256
@@ -473,6 +480,8 @@ static int demo_alg_createHandle(CONFIG_DATA_T *config_data, void *model_handle,
 
   param_info_net->in_blob_num = 1;
 
+  DEMOPRT((char*)"[DEBUG]: src_format -> %d", param_info_net->in_blob_param[0].src_format);
+
   if (1 == config_data->test_data_type) {
     param_info_net->in_blob_param[0].src_format = OPDEVSDK_HKA_BGR; ///< BGR
   } else if (2 == config_data->test_data_type) {
@@ -810,17 +819,43 @@ int demo_alg_proc_fromCamera(OPDEVSDK_VIDEO_FRAME_INFO_ST *pfrm,
                              OPDEVSDK_POS_TARGET_LIST_INFO_ST *ptarget,
                              int check_weight_limit) {
   // int check_weight_limit  地磅所在的行的最大值
-  int check_flag = -1;
+  // int check_flag = -1;
+  int check_flag = 0;
   int ret = 0;
-  unsigned long long total = 0;
+  unsigned long long total[HIK_MODEL_NUM] = {0};
+  // 模型输入roi为文字识别模型
+  void *test_img_data = NULL;
+  unsigned long long phy_base = 0;
+  int data_size = pfrm->yuvFrame.width * pfrm->yuvFrame.height * 3;
+  char file_name[256] = {'\0'};
+  int total_pic_num = 0;
+  unsigned char *data_temp = NULL;
+  unsigned char *current_processing_pic = NULL;
 
   OUTPUT_BOX_INFO *box_info = NULL;
-  OPDEVSDK_HIKFLOW_FORWARD_OUT_INFO_ST hkann_out = {0};
-  memset(&hkann_out, 0, sizeof(OPDEVSDK_HIKFLOW_FORWARD_OUT_INFO_ST));
+  OPDEVSDK_HIKFLOW_FORWARD_OUT_INFO_ST hkann_out[HIK_MODEL_NUM] = {{0}};
 
-  // 修改:[0]为yolo模型
-  ret = demo_alg_Process(g_net_handle[0], &g_param_info_net[0], &hkann_out,
-                         &g_config_data[0], pfrm->yuvFrame.pVirAddr[0], 1, &total);
+  for (int i=0; i<HIK_MODEL_NUM; i++)
+  {
+    memset(&hkann_out[i], 0, sizeof(OPDEVSDK_HIKFLOW_FORWARD_OUT_INFO_ST));
+  }
+
+  DEMOPRT((char *)"[print] get target frm type %d, num %d, ts %llu\n",
+          pfrm->yuvFrame.dataFormat, pfrm->frmNum, pfrm->timeStamp);
+
+  DEMOPRT((char *)"[print] get target frm width %d, height %d\n",
+          pfrm->yuvFrame.width, pfrm->yuvFrame.height);
+
+
+  // // Mat rawToMat = Mat(640, 640, CV_8UC3, (uchar *)current_processing_pic_bgr);
+  // Mat rawToMat = Mat(pfrm->yuvFrame.height, pfrm->yuvFrame.width, CV_8U, (uchar *)pfrm->yuvFrame.pVirAddr[0]);
+  //
+  // // save the original frame to jpg
+  // imwrite("original_frameO.jpg", rawToMat);
+
+  // [0]为yolo模型，[1]为文字识别模型
+  // ret = demo_alg_Process(g_net_handle[0], &g_param_info_net[0], &hkann_out[0], &g_config_data[0], pfrm->yuvFrame.pVirAddr[0], 1, &total[0]);
+  ret = demo_alg_Process(g_net_handle[0], &g_param_info_net[0], &hkann_out[0], &g_config_data[0], pfrm->yuvFrame.pVirAddr[0], 1, &total[0]);
   if (OPDEVSDK_S_OK != ret) {
     DEMOPRT((char *)"demo_alg_Process error= 0x%x \n", ret);
     goto err;
@@ -834,40 +869,185 @@ int demo_alg_proc_fromCamera(OPDEVSDK_VIDEO_FRAME_INFO_ST *pfrm,
   // \n");
   // DEMOPRT((char*)"----------------------------------------------------------------\n");
   int detectnum;
-  detectnum = hkann_out.output_blob[0].shape[0];
+  detectnum = hkann_out[0].output_blob[0].shape[0];
+  DEMOPRT((char*)"detectnum is %d", detectnum);
   for (int n = 0; n < detectnum; n++) {
-    box_info = (OUTPUT_BOX_INFO *)hkann_out.output_blob[0].data;
+    box_info = (OUTPUT_BOX_INFO *)hkann_out[0].output_blob[0].data;
     box_info = box_info + n;
+    DEMOPRT((char *)"current bounding box: %d\n", n);
+    DEMOPRT((char *)"class  = %f\n", box_info->class_type);
+    DEMOPRT((char *)"score   = %f\n", box_info->score);
+    DEMOPRT((char *)"x       = %f\n", box_info->bbox.x);
+    DEMOPRT((char *)"y       = %f\n", box_info->bbox.y);
+    DEMOPRT((char *)"w       = %f\n", box_info->bbox.w);
+    DEMOPRT((char *)"h       = %f\n", box_info->bbox.h);
+    DEMOPRT((char *)"batch   = %f\n", box_info->batch_idx);
 
-    float class_type = box_info->class_type;
+    Mat rawToMat = Mat(640, 640, CV_8U, (uchar *)pfrm->yuvFrame.pVirAddr[0]);
+    float x_min = box_info->bbox.x;
+    float y_min = box_info->bbox.y;
+    float x_max = box_info->bbox.x + box_info->bbox.w;
+    float y_max = box_info->bbox.y + box_info->bbox.h;
+    DEMOPRT((char *)"x_min     = %f\n", x_min);
+    DEMOPRT((char *)"y_min     = %f\n", y_min);
+    DEMOPRT((char *)"x_max     = %f\n", x_max);
+    DEMOPRT((char *)"y_max     = %f\n", y_max);
 
-    if ((int)class_type == 2 || (int)class_type == 5 || (int)class_type == 6 ||
-        (int)class_type == 7) {
-      DEMOPRT((char *)"*********there is a car here*******");
-      DEMOPRT((char *)"current bounding box: %d\n", n);
-      DEMOPRT((char *)"class = %f\n", box_info->class_type);
-      DEMOPRT((char *)"score  = %f\n", box_info->score);
-      DEMOPRT((char *)"x      = %f\n", box_info->bbox.x);
-      DEMOPRT((char *)"y      = %f\n", box_info->bbox.y);
-      DEMOPRT((char *)"w      = %f\n", box_info->bbox.w);
-      DEMOPRT((char *)"h      = %f\n", box_info->bbox.h);
-      DEMOPRT((char *)"batch  = %f\n", box_info->batch_idx);
-      float y_max = box_info->bbox.y + box_info->bbox.h;
-      DEMOPRT((char *)"y_max     = %f\n", y_max);
-      DEMOPRT((char *)"check_weight_limit     = %f\n", check_weight_limit);
-      if (y_max > check_weight_limit) {
-        check_flag = 0;
-        continue;
-        DEMOPRT((char *)"*********the car is outside the weight*******");
-      } else {
-        check_flag = 1;
-        continue;
-        DEMOPRT((char *)"*********the car is on the weight*******");
-      }
-      break;
-    } else {
-      check_flag = -1;
+    Mat plate =
+        rawToMat(Rect(x_min, y_min, x_max - x_min, y_max - y_min));
+    DEMOPRT((char*) "before plate_resize!");
+    // 符合CRNN模型输入的尺寸
+    Mat plate_resize = Mat::zeros(48, 168, plate.type());
+
+    DEMOPRT((char*) "before aspect_ratio!");
+    // 计算截取的车牌的宽高比
+    double aspect_ratio = static_cast<double>(plate.cols) / plate.rows;
+    DEMOPRT((char *)"aspect_ratio = %f\n", aspect_ratio);
+    if (aspect_ratio == 0) {
+      DEMOPRT((char *)"aspect_ratio is 0\n");
+      continue;
     }
+    int new_width = 168;
+    int new_height = static_cast<int>(new_width / aspect_ratio);
+    if (new_height > 48) {
+      new_height = 48;
+      new_width = static_cast<int>(new_height * aspect_ratio);
+    }
+    DEMOPRT((char *)"crop_plate(keep aspect ratio) new width: %d, new height: %d\n", new_width, new_height);
+
+    // 将车牌缩放到指定尺寸
+    Mat temp;
+    resize(plate, temp, Size(new_width, new_height), 0, 0, INTER_CUBIC);
+    // 计算车牌在新图像中的中心位置
+    int x_offset = (168 - new_width) / 2;
+    int y_offset = (48 - new_height) / 2;
+    // 将车牌放到新图像中
+    temp.copyTo(plate_resize(Rect(x_offset, y_offset, new_width, new_height)));
+
+    DEMOPRT((char *)"plate_resize width = %d\n", plate_resize.cols);
+    DEMOPRT((char *)"plate_resize height = %d\n", plate_resize.rows);
+
+    // 透视变换
+    DEMOPRT((char*)"channels %d", plate_resize.channels());
+
+    Mat gray = plate_resize;
+    // DEMOPRT((char *)"before cvtColor\n");
+    // cvtColor(img, gray, cv::COLOR_BGR2GRAY);
+    // DEMOPRT((char *)"after cvtColor\n");
+
+    // Get feature points
+    std::vector<std::vector<Point>> contours;
+    std::vector<Point> feature_point(4);
+    getLicensePlateCandidates(gray, contours, 5, false);
+
+    // iter
+    for (auto &contour : contours) {
+      feature_point.resize(4);
+      Rect rect = boundingRect(contour);
+      if (rect.width == 0 || rect.height == 0) {
+        continue;
+      }
+      double ratio = (double)rect.width / rect.height;
+      if (ratio < 2 || ratio > 5.5) {
+        continue;
+      }
+      getFeaturePoint(gray, contour, feature_point, 7, false);
+      break;
+    }
+
+    Mat dst_img;
+    getTransForm(plate_resize, dst_img, feature_point, false);
+
+    imwrite("plate.png", dst_img);
+
+
+    Mat preprocessed_plate;
+    mat_to_bgr_planner(&preprocessed_plate, "./plate.png", "./plate.bgr", true, true, &g_config_data[1]);
+
+
+    FILE* plate_pic_file = fopen("./plate.bgr", "rb");
+    int plate_data_size = 0;
+    if (g_param_info_net[1].in_blob_param[0].src_format == OPDEVSDK_HKA_BGR)
+    {
+      plate_data_size = g_config_data[1].w * g_config_data[1].h * g_config_data[1].c;
+    }
+    else {
+      plate_data_size = g_config_data[1].w * (g_config_data[1].h + (g_config_data[1].h >> 1));
+    }
+
+    ret = opdevsdk_mem_allocCache((void **)&phy_base, (void **)&(test_img_data), (const char *)"mmcache", plate_data_size);
+
+    if (0 != ret) {
+      DEMOPRT((char *)"opdevsdk_memAllocCache failed ret=%d\n", ret);
+      goto err;
+    }
+
+    unsigned char* plate_data_temp = (unsigned char*)test_img_data;
+
+    fseek(plate_pic_file, 0, SEEK_SET);
+    fread(plate_data_temp, plate_data_size, 1, plate_pic_file);
+
+    if (NULL != plate_pic_file) {
+      fclose(plate_pic_file);
+      plate_pic_file = NULL;
+    }
+
+    ret = demo_alg_Process(g_net_handle[1], &g_param_info_net[1], &hkann_out[1],
+                           &g_config_data[1], test_img_data, 1, &total[1]);
+
+    if (ret != 0) {
+      DEMOPRT((char *)"demo_alg_Process error= 0x%x \n", ret);
+      goto err;
+    }
+
+    float **arr = NULL;
+    arr = (float **)malloc(21 * sizeof(float *));
+    for (int i = 0; i < 21; i++)
+      arr[i] = (float *)malloc(78 * sizeof(float));
+
+    parseRawData((float *)hkann_out[1].output_blob[0].data, 78 * 21, &arr);
+
+    char *palte_name = parsePlateName(arr, 21);
+    for (int i = 0; i < 21; i++) {
+      if (arr[i] != NULL)
+        free(arr[i]);
+    }
+    if (arr != NULL)
+      free(arr);
+    DEMOPRT((char *)"车牌号为：%s\n", palte_name);
+
+    free(palte_name);
+
+    // float class_type = box_info->class_type;
+
+    // if ((int)class_type == 2 || (int)class_type == 5 || (int)class_type == 6 || (int)class_type == 7) {
+    //   DEMOPRT((char *)"*********there is a car here*******");
+    //   DEMOPRT((char *)"current bounding box: %d\n", n);
+    //   DEMOPRT((char *)"class = %f\n", box_info->class_type);
+    //   DEMOPRT((char *)"score  = %f\n", box_info->score);
+    //   DEMOPRT((char *)"x      = %f\n", box_info->bbox.x);
+    //   DEMOPRT((char *)"y      = %f\n", box_info->bbox.y);
+    //   DEMOPRT((char *)"w      = %f\n", box_info->bbox.w);
+    //   DEMOPRT((char *)"h      = %f\n", box_info->bbox.h);
+    //   DEMOPRT((char *)"batch  = %f\n", box_info->batch_idx);
+    //   float y_max = box_info->bbox.y + box_info->bbox.h;
+    //   DEMOPRT((char *)"y_max     = %f\n", y_max);
+    //   DEMOPRT((char *)"check_weight_limit     = %f\n", check_weight_limit);
+    //   if (y_max > check_weight_limit) {
+    //     check_flag = 0;
+    //     continue;
+    //     DEMOPRT((char *)"*********the car is outside the weight*******");
+    //   }
+    //   else {
+    //     check_flag = 1;
+    //     continue;
+    //     DEMOPRT((char *)"*********the car is on the weight*******");
+    //   }
+    //   break;
+    // }
+    // else {
+    //   check_flag = -1;
+    // }
 
     if (ptarget->tgtList.tgtNum < MAX_OUTPUT_BOX_NUM) {
       ptarget->tgtList.tgtNum++;
@@ -895,11 +1075,7 @@ int demo_alg_proc_fromCamera(OPDEVSDK_VIDEO_FRAME_INFO_ST *pfrm,
       ptarget->tgtList.pTgt[n].region.point[3].y =
           box_info->bbox.y / g_config_data[0].h +
           box_info->bbox.h / g_config_data[0].h;
-      // DEMOPRT((char*)"n %d alg_w %d alg_h %d x %f y %f w %f h %f  target num
-      // %d\n",
-      //     n, g_config_data.w, g_config_data.h, box_info->bbox.x,
-      //     box_info->bbox.y, box_info->bbox.w, box_info->bbox.h,
-      //     ptarget->tgtList.tgtNum);
+      DEMOPRT((char*)"n %d alg_w %d alg_h %d x %f y %f w %f h %f  target num %d\n", n, g_config_data[0].w, g_config_data[0].h, box_info->bbox.x, box_info->bbox.y, box_info->bbox.w, box_info->bbox.h, ptarget->tgtList.tgtNum);
     }
   }
   ptarget->timeStamp = pfrm->timeStamp;
@@ -933,6 +1109,9 @@ err:
       opdevsdk_mem_free((void *)(PTR_VOID)g_model_phy_base, g_model_buffer);
     }
   }
+  if (NULL != test_img_data) {
+    opdevsdk_mem_free((void *)(PTR_VOID)phy_base, test_img_data);
+  }
 
   return -1;
 }
@@ -944,6 +1123,12 @@ err:
  * @see
  */
 int demo_alg_proc_fromFile() {
+
+  struct timeval time_begin, time_end;
+  struct timeval time_begin_func, time_end_func;
+  unsigned long long one_time_func = 0;
+
+  gettimeofday(&time_begin_func, NULL);
   int ret = 0;
   unsigned long long total[HIK_MODEL_NUM] = {0};
 
@@ -1044,6 +1229,8 @@ int demo_alg_proc_fromFile() {
       }
     }
 
+    DEMOPRT((char*)"[debug] src_format: %d\n", g_param_info_net[0].in_blob_param[0].src_format);
+
     ret = demo_alg_Process(g_net_handle[0], &g_param_info_net[0], &hkann_out[0],
                            &g_config_data[0], test_img_data[0], k, &total[0]);
     if (ret != 0) {
@@ -1099,17 +1286,19 @@ int demo_alg_proc_fromFile() {
       DEMOPRT((char *)"h       = %f\n", box_info->bbox.h);
       DEMOPRT((char *)"batch   = %f\n", box_info->batch_idx);
 
+      // 车牌裁剪耗时
+      gettimeofday(&time_begin, NULL);
 
       unsigned char* current_processing_pic_bgr = (unsigned char*)malloc(640 * 640 * 3); 
 
-      for (int i = 0; i < 640 * 640; i++) {
-        current_processing_pic_bgr[i * 3] = current_processing_pic[i];
-        current_processing_pic_bgr[i * 3 + 1] = current_processing_pic[i + 640 * 640];
-        current_processing_pic_bgr[i * 3 + 2] = current_processing_pic[i + 640 * 640 * 2];
-      }
+      // for (int i = 0; i < 640 * 640; i++) {
+      //   current_processing_pic_bgr[i * 3] = current_processing_pic[i];
+      //   current_processing_pic_bgr[i * 3 + 1] = current_processing_pic[i + 640 * 640];
+      //   current_processing_pic_bgr[i * 3 + 2] = current_processing_pic[i + 640 * 640 * 2];
+      // }
 
-      Mat rawToMat = Mat(640, 640, CV_8UC3, (uchar *)current_processing_pic_bgr);
-      // Mat rawToMat = Mat(640, 640, CV_8UC3, (uchar *)current_processing_pic);
+      // Mat rawToMat = Mat(640, 640, CV_8UC3, (uchar *)current_processing_pic_bgr);
+      Mat rawToMat = Mat(640, 640, CV_8U, (uchar *)current_processing_pic);
       float x_min = box_info->bbox.x;
       float y_min = box_info->bbox.y;
       float x_max = box_info->bbox.x + box_info->bbox.w;
@@ -1146,14 +1335,69 @@ int demo_alg_proc_fromFile() {
       DEMOPRT((char *)"plate_resize width = %d\n", plate_resize.cols);
       DEMOPRT((char *)"plate_resize height = %d\n", plate_resize.rows);
 
-      imwrite("plate.png", plate_resize);
+      gettimeofday(&time_end, NULL);
+
+      one_time = 1000000 * (time_end.tv_sec - time_begin.tv_sec) +
+                 (time_end.tv_usec - time_begin.tv_usec);
+      DEMOPRT((char *)"车牌裁剪耗时：%ld us", one_time);
+
+      // 透视变换耗时
+      gettimeofday(&time_begin, NULL);
+      DEMOPRT((char*)"channels %d", plate_resize.channels());
+
+      Mat gray = plate_resize;
+      // DEMOPRT((char *)"before cvtColor\n");
+      // cvtColor(img, gray, cv::COLOR_BGR2GRAY);
+      // DEMOPRT((char *)"after cvtColor\n");
+
+      // Get feature points
+      std::vector<std::vector<Point>> contours;
+      std::vector<Point> feature_point(4);
+      getLicensePlateCandidates(gray, contours, 5, false);
+
+      // iter
+      for (auto &contour : contours) {
+        feature_point.resize(4);
+        Rect rect = boundingRect(contour);
+        if (rect.width == 0 || rect.height == 0) {
+          continue;
+        }
+        double ratio = (double)rect.width / rect.height;
+        if (ratio < 2 || ratio > 5.5) {
+          continue;
+        }
+        getFeaturePoint(gray, contour, feature_point, 7, false);
+        break;
+      }
+
+      Mat dst_img;
+      getTransForm(plate_resize, dst_img, feature_point, false);
+
+      gettimeofday(&time_end, NULL);
+
+      one_time = 1000000 * (time_end.tv_sec - time_begin.tv_sec) +
+                 (time_end.tv_usec - time_begin.tv_usec);
+      DEMOPRT((char *)"透视变换耗时：%ld us", one_time);
+
+      // 预处理耗时
+      gettimeofday(&time_begin, NULL);
+      imwrite("plate.png", dst_img);
+
+      // imwrite("plate.png", plate_resize);
 
       Mat preprocessed_plate;
       mat_to_bgr_planner(&preprocessed_plate, "./plate.png", "./plate.bgr", true, true, &g_config_data[1]);
 
 
       FILE* plate_pic_file = fopen("./plate.bgr", "rb");
-      int plate_data_size = g_config_data[1].w * g_config_data[1].h * g_config_data[1].c;
+      int plate_data_size = 0;
+      if (g_param_info_net[1].in_blob_param[0].src_format == OPDEVSDK_HKA_BGR)
+      {
+        plate_data_size = g_config_data[1].w * g_config_data[1].h * g_config_data[1].c;
+      }
+      else {
+        plate_data_size = g_config_data[1].w * (g_config_data[1].h + (g_config_data[1].h >> 1));
+      }
 
       ret = opdevsdk_mem_allocCache((void **)&phy_base[1], (void **)&(test_img_data[1]), (const char *)"mmcache", plate_data_size);
 
@@ -1171,6 +1415,12 @@ int demo_alg_proc_fromFile() {
         fclose(plate_pic_file);
         plate_pic_file = NULL;
       }
+
+      gettimeofday(&time_end, NULL);
+
+      one_time = 1000000 * (time_end.tv_sec - time_begin.tv_sec) +
+                 (time_end.tv_usec - time_begin.tv_usec);
+      DEMOPRT((char *)"预处理耗时：%ld us", one_time);
 
       ret = demo_alg_Process(g_net_handle[1], &g_param_info_net[1], &hkann_out[1],
                              &g_config_data[1], test_img_data[1], k, &total[1]);
@@ -1198,7 +1448,6 @@ int demo_alg_proc_fromFile() {
 
       free(palte_name);
       free(current_processing_pic_bgr);
-      free(plate_data_temp);
     }
 
     DEMOPRT((char *)"----------------------------------------------------------"
@@ -1208,6 +1457,14 @@ int demo_alg_proc_fromFile() {
     }
   }
   DEMOPRT((char *)"Process avg time:%llu us\n", (total[0] + total[1]) / total_pic_num);
+
+
+  gettimeofday(&time_end_func, NULL);
+
+  one_time_func = 1000000 * (time_end_func.tv_sec - time_begin_func.tv_sec) +
+             (time_end_func.tv_usec - time_begin_func.tv_usec);
+
+  DEMOPRT((char *)"函数总执行时间：%llu us", one_time_func);
 
 err:
   ///< release network
@@ -1229,7 +1486,7 @@ err:
     }
 
     if (NULL != test_img_data[i]) {
-      opdevsdk_mem_free((void *)(PTR_VOID)phy_base[0], test_img_data[i]);
+      opdevsdk_mem_free((void *)(PTR_VOID)phy_base[i], test_img_data[i]);
     }
   }
 
@@ -1298,7 +1555,6 @@ int demo_alg_releaseBuffer() {
   return OPDEVSDK_S_OK;
 }
 
-// TODO: 哪里用到这个函数了？
 int demo_alg_get_res(int *alg_w, int *alg_h) {
   if (NULL == alg_w || NULL == alg_h) {
     DEMOPRT((char *)"free g_model_buffer\n");

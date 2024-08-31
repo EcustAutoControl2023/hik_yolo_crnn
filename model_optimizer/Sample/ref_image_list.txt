@@ -1,1 +1,10 @@
-ref_img_dir/1.jpg
+ref_img_dir/1.png
+ref_img_dir/2.png
+ref_img_dir/3.jpg
+ref_img_dir/4.png
+ref_img_dir/62.jpg
+ref_img_dir/65.jpg
+ref_img_dir/66.jpg
+ref_img_dir/67.jpg
+ref_img_dir/68.jpg
+ref_img_dir/71.jpg

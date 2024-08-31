@@ -21,6 +21,7 @@
  * @note         Unified platform AND parse bin info
  *****************************************************************************/
 
+#include <cstddef>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -119,7 +120,7 @@ static int alg_height = 416;
 
 static OPDEVSDK_SYS_ABILITY_ST abili;
 
-#define MSCALE_TEST (1)
+#define MSCALE_TEST (0)
 static int groupId = -1;
 static void *mscale_hdl = NULL;
 static int bvin_init = OP_FALSE;
@@ -297,17 +298,29 @@ static int demo_img_copy(OPDEVSDK_VIDEO_FRAME_ST *yuvSrc,
                          OPDEVSDK_VIDEO_FRAME_ST *yuvDst) {
   int ret;
 
-  OPDEVSDK_IMG_SCALE_PARAM_ST scale = {0};
+  OPDEVSDK_IMG_SCALE_PARAM_ST scale = {{{0}}};
+  OPDEVSDK_IMG_RECT_PARAM_ST rect = {{0}};
   scale.rectParam.point.x = 0;
   scale.rectParam.point.y = 0;
   scale.rectParam.width = yuvSrc->width;
   scale.rectParam.height = yuvSrc->height;
-
-  ret = opdevsdk_img_scale(yuvSrc, yuvDst, scale);
+  // 计算原图的中心点
+  int src_center_x = yuvSrc->width / 2;
+  int src_center_y = yuvSrc->height / 2;
+  rect.width = yuvDst->width;
+  rect.height = yuvDst->height;
+  rect.point.x = src_center_x - rect.width / 2;
+  rect.point.y = src_center_y - rect.height / 2;
+  ret = opdevsdk_img_dmaCopy2d(yuvSrc, yuvDst, rect);
   if (ret != OPDEVSDK_S_OK) {
     DEMOPRT((char *)"opdevsdk_imageScale error ret = 0x%x\n", ret);
     return ret;
   }
+  // ret = opdevsdk_img_scale(yuvSrc, yuvDst, scale);
+  // if (ret != OPDEVSDK_S_OK) {
+  //   DEMOPRT((char *)"opdevsdk_imageScale error ret = 0x%x\n", ret);
+  //   return ret;
+  // }
   return OPDEVSDK_S_OK;
 }
 
@@ -380,7 +393,8 @@ static int demo_put_yuv_frame(OPDEVSDK_VIDEO_FRAME_INFO_ST *frm) {
  *
  * @return           0 if successful, otherwise an error number returned
  */
-static int demo_video_get_thread() {
+// static int demo_video_get_thread() {
+void *demo_video_get_thread(void *arg) {
   int ret = 0;
   static int avg = 0, total = 0, frm_num = 0;
   // OPDEVSDK_SYS_THREAD_NAME_ST name = {"video_get"};
@@ -391,8 +405,8 @@ static int demo_video_get_thread() {
   OPDEVSDK_SYS_ABILITY_ST abili = {0};
   opdevsdk_sys_getAbility(&abili);
   if (abili.vinAbili.chnNum < 1) {
-    // DEMOPRT((char*)"vinAbili.chnNum %d err\n", abili.vinAbili.chnNum);
-    return -1;
+    DEMOPRT((char*)"vinAbili.chnNum %d err\n", abili.vinAbili.chnNum);
+    return NULL;
   }
   int chan = abili.vinAbili.chnInfo[0].chan;
   // memset(&frame, 0, sizeof(OPDEVSDK_VIDEO_FRAME_INFO_ST));
@@ -442,7 +456,7 @@ static int demo_video_get_thread() {
   // DEMOPRT((char*)"###### demo_video_get_thread exit thread_flg %d \n",
   // thread_flg);
 
-  return ret;
+  // return ret;
 }
 
 /**
@@ -958,7 +972,8 @@ static int demo_alg_proc(OPDEVSDK_VIDEO_FRAME_INFO_ST *pfrm,
  *
  * @return           0 if successful, otherwise an error number returned
  */
-static int demo_alg_proc_thread() {
+// static int demo_alg_proc_thread() {
+void *demo_alg_proc_thread(void *arg) {
   int ret = 0;
   OPDEVSDK_VIDEO_FRAME_INFO_ST *pfrm = NULL;
 
@@ -969,8 +984,8 @@ static int demo_alg_proc_thread() {
   OPDEVSDK_SYS_ABILITY_ST abili = {OPDEVSDK_POS_TIME_TYPE_1K};
   opdevsdk_sys_getAbility(&abili);
   if (abili.vinAbili.chnNum < 1) {
-    // DEMOPRT((char*)"vinAbili.chnNum %d err\n", abili.vinAbili.chnNum);
-    return -1;
+    DEMOPRT((char*)"vinAbili.chnNum %d err\n", abili.vinAbili.chnNum);
+    return NULL;
   }
   int chan = abili.vinAbili.chnInfo[0].chan;
 
@@ -1252,6 +1267,88 @@ void *demo_alg_proc_thread_2(void *arg)
   OPDEVSDK_POS_TARGET_LIST_INFO_ST pack_target = {OPDEVSDK_POS_TIME_TYPE_1K};
 
   while (thread_flg) {
+    DEMOPRT((char*)"demo_alg_process: camera!");
+    // 阻塞get
+    ret = opdevsdk_mscale_getFrame(mscale_hdl, img1, &img1_frame, -1);
+    if (ret != OPDEVSDK_S_OK) {
+      DEMOPRT((char *)"demo_alg_process error  ret = 0x%x\n", ret);
+      mscale_get_err++;
+    }
+    // img2 get，也可单独开一个线程获取
+    ret = opdevsdk_mscale_getFrame(mscale_hdl, img2, &img2_frame, -1);
+    if (ret != OPDEVSDK_S_OK) {
+      DEMOPRT((char *)"demo_alg_process error  ret = 0x%x\n", ret);
+      mscale_get_err++;
+    }
+
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    unsigned int start = (((unsigned int)tv.tv_sec) * 1000 +
+                          ((unsigned int)tv.tv_usec) / 1000);
+
+    // algorithm processing and return target list
+    memset(&pack_target, 0, sizeof(pack_target));
+    memset(&target[0], 0, sizeof(target));
+    pack_target.tgtList.pTgt = &target[0];
+    int check_weight_result = -1;
+    check_weight_result = demo_alg_proc_fromCamera(&img2_frame, &pack_target,
+                                                   check_weight_limit);
+    DEMOPRT((char *)"*********check_weight_result:%d*******\n",
+            check_weight_result);
+    gettimeofday(&tv, NULL);
+    unsigned int end = (((unsigned int)tv.tv_sec) * 1000 +
+                        ((unsigned int)tv.tv_usec) / 1000);
+
+    alg_buf.buf_r++;
+    alg_buf.buf_r = alg_buf.buf_r % DEMO_MAX_ALG_BUF_COUNT;
+    if (frm_num % 25 == 0) {
+      DEMOPRT((char *)"put target frm %d, ts %llu\n", img1_frame.frmNum,
+              img1_frame.timeStamp);
+    }
+
+    // 目标打包
+    pack_target.timeType = OPDEVSDK_POS_TIME_TYPE_1K;
+    pack_target.packId = 0; // 预留
+    pack_target.timeStamp =
+        timeStamp /
+        1000; // img1_frame.timeStamp /
+              // 1000;//hikflow算法处理耗时过大，时间戳取最新时间戳
+    pack_target.attribute = OPDEVSDK_POS_POLYGON_ATTRI_NORMAL;
+    // pack_target.tgtList.tgtNum  = 8;
+    pack_target.tgtList.pTgt = &target[0];
+    // send data to WEB for displaying
+    ret = opdevsdk_pos_procTarget(chan, &pack_target);
+    if (ret != OPDEVSDK_S_OK) {
+      DEMOPRT((char *)"opdevsdk_videoDemoVca error  ret = 0x%x\n", ret);
+    }
+
+    // img1 release
+    ret = opdevsdk_mscale_releaseFrame(mscale_hdl, &img1_frame);
+    if (ret != OPDEVSDK_S_OK) {
+      DEMOPRT((char *)"opdevsdk_mscale_releaseFrame error  ret = 0x%x\n",
+              ret);
+      mscale_rel_err++;
+    }
+    memset(&img1_frame, 0, sizeof(OPDEVSDK_VIDEO_FRAME_INFO_ST));
+    // img2 release
+    ret = opdevsdk_mscale_releaseFrame(mscale_hdl, &img2_frame);
+    if (ret != OPDEVSDK_S_OK) {
+      DEMOPRT((char *)"opdevsdk_mscale_releaseFrame error  ret = 0x%x\n",
+              ret);
+      mscale_rel_err++;
+    }
+    memset(&img2_frame, 0, sizeof(OPDEVSDK_VIDEO_FRAME_INFO_ST));
+    // calculate
+    DEMOPRT((char*)"demo_alg_proc costtime:%dms \n",end - start);
+    total += (end - start);
+    frm_num += 1;
+    avg = total / frm_num;
+    if(frm_num % 25 == 0)
+    {
+        DEMOPRT((char*)"alg proc interval %dms avg %dms\n", end - start,
+        avg);
+    }
+
     if (check_weight_flag == 1) {
       // 阻塞get
       ret = opdevsdk_mscale_getFrame(mscale_hdl, img1, &img1_frame, -1);
@@ -1340,7 +1437,7 @@ void *demo_alg_proc_thread_2(void *arg)
     // DEMOPRT((char*)"###### alg_proc_thrd exit thread_flg %d check_1 0x%x
     // check_2 0x%x\n", thread_flg, check_1, check_2);
 
-    return OPDEVSDK_S_OK;
+    // return OPDEVSDK_S_OK;
   }
   return OPDEVSDK_S_OK;
 }
@@ -1656,7 +1753,7 @@ void catch_sigsegv(void) {
   actionPipe.sa_flags = 0;
 
   /// 增加SIGPIPE信号忽略
-  /// TODO:[WARNING]此处报错,待查
+  /// TODO:  [WARNING]此处报错,待查
   if (sigaction(SIGPIPE, &actionPipe, 0) < 0) {
     perror("sigaction");
   }
@@ -1728,7 +1825,6 @@ int main(int argc, char *argv[]) {
 
   DEMOPRT((char *)"--- demo_alg_init start\n");
   // hikflow init
-  // TODO:加载两个模型
   demo_alg_init(argv[1]);
   DEMOPRT((char *)"--- demo_alg_init end\n");
   thread_flg = 1;
@@ -1737,15 +1833,17 @@ int main(int argc, char *argv[]) {
     /*algorithm processing thread*/
     pthread_create(&yuv_proc_tid, NULL, demo_alg_proc_from_file_thread, NULL);
     pthread_join(yuv_proc_tid, NULL);
-  } else if (0 == strcmp("YUV", argv[2])) {
+  } 
+  else if (0 == strcmp("YUV", argv[2])) {
+    // TODO:  视频流
     demo_alg_get_res(&alg_width, &alg_height);
-    // DEMOPRT((char*)"--- alg_width %d alg_height %d MSCALE_TEST %d\n",
-    // alg_width, alg_height, MSCALE_TEST);
+    DEMOPRT((char*)"--- alg_width %d alg_height %d MSCALE_TEST %d\n", alg_width, alg_height, MSCALE_TEST);
 
     int grpId = 0;
     void *ms_hdl = NULL;
     int chan = 0;
     OPDEVSDK_VIN_CHN_ST vin_info = {0};
+    // TODO:  理解一下
 #if MSCALE_TEST
     ret = demo_mscale_prep(&chan, &grpId, &ms_hdl, &vin_info);
     if (ret != 0) {
@@ -1785,8 +1883,8 @@ int main(int argc, char *argv[]) {
 #endif
     input_width = vin_info.width;
     input_height = vin_info.height;
-    // DEMOPRT((char*)"chan %d input w %d h %d\n", chan, input_width,
-    // input_height);
+    DEMOPRT((char*)"chan %d input w %d h %d\n", chan, input_width,
+    input_height);
 
     thread_flg = 1;
 #if MSCALE_TEST
@@ -1825,7 +1923,7 @@ int main(int argc, char *argv[]) {
       demo_alg_buf_init(&alg_buf, alg_width, alg_height);
 
       /*getting YUV frames to algorithm buffer*/
-      ret = pthread_create(&yuv_proc_tid, NULL, (void *)demo_video_get_thread,
+      ret = pthread_create(&yuv_proc_tid, NULL, &demo_video_get_thread,
                            NULL);
       // 线程优先级默认填80，栈大小可填0(当前内部限制最低2M),args为透传参数,不需要填0，后面不填透传参数
       if (ret != 0) {
@@ -1834,7 +1932,7 @@ int main(int argc, char *argv[]) {
       }
 
       /*algorithm processing*/
-      ret = pthread_create(&yuv_proc_tid_2, NULL, (void *)demo_alg_proc_thread,
+      ret = pthread_create(&yuv_proc_tid_2, NULL, &demo_alg_proc_thread,
                            NULL);
       if (ret != 0) {
         DEMOPRT((char *)"devsdk_pthrd_creat_pthread error ret = 0x%x\n", ret);

@@ -37,6 +37,23 @@ void mat_to_bgr_planner(
     CONFIG_DATA_T* config_data
 );
 
+// TODO:  待实现
+void jpg2nv12(
+    cv::Mat* img,
+    const char* img_path,
+    const char* nv12_path,
+    bool size_change,
+    CONFIG_DATA_T* config_data
+);
+
+void jpg2nv21(
+    cv::Mat* img,
+    const char* img_path,
+    const char* nv21_path,
+    bool size_change,
+    CONFIG_DATA_T* config_data
+);
+
 void convert_images(
     CONFIG_DATA_T* config_data
 );

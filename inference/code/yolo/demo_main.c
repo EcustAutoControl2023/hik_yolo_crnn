@@ -38,7 +38,7 @@
 #include <sys/time.h>
 #include <time.h>
 
-/// ÏµÍ³Í·ÎÄ¼ş
+/// ç³»ç»Ÿå¤´æ–‡ä»¶
 #include <dlfcn.h>
 #include <fcntl.h>
 #include <libgen.h>
@@ -94,9 +94,11 @@
 	}\
 }\
 "
-static int check_weight_flag = 0; // 0±íÊ¾²»¼ì²â£¬1±íÊ¾¼ì²â
-static int check_weight_result = -1; // -1±íÊ¾Î´¼ì²â£¬0±íÊ¾²»ÔÚ°õÉÏ£¬1±íÊ¾ÔÚ°õÉÏ
-static int check_weight_limit = 0; // ÁÙÊ±ÉèÖÃ£¬°õµÄÎ»ÖÃ
+static int check_weight_flag = 0; // 0è¡¨ç¤ºä¸æ£€æµ‹ï¼Œ1è¡¨ç¤ºæ£€æµ‹
+static int check_weight_result = -1; // -1è¡¨ç¤ºæœªæ£€æµ‹ï¼Œ0è¡¨ç¤ºä¸åœ¨ç£…ä¸Šï¼Œ1è¡¨ç¤ºåœ¨ç£…ä¸Š
+static int check_weight_limit = 0; // ä¸´æ—¶è®¾ç½®ï¼Œç£…çš„ä½ç½®
+
+static char plate_number[64] = {0}; // è½¦ç‰Œå· 21 * 3
 
 #define DEMO_MAX_CHAR_NUM (256)
 #define DEMO_MAX_CAL_TIMES (10 * 12.5 * 1)
@@ -132,12 +134,12 @@ static OPDEVSDK_VIDEO_FRAME_INFO_ST img2_frame = {0};
 
 unsigned long long timeStamp = 0;
 
-#define VB_POOL_W_H_ALIGN (16) /*VBÉêÇëÊ±¼ÆËã´óĞ¡Ê±µÄ¿í¸ß¶ÔÆë*/
+#define VB_POOL_W_H_ALIGN (16) /*VBç”³è¯·æ—¶è®¡ç®—å¤§å°æ—¶çš„å®½é«˜å¯¹é½*/
 
-/*ÏòÏÂ¶ÔÆë*/
+/*å‘ä¸‹å¯¹é½*/
 #define ALIGN_BACK(val, align) (((val) / (align)) * (align))
 
-/*ÏòÉÏ¶ÔÆë*/
+/*å‘ä¸Šå¯¹é½*/
 #define ALIGN_FOWARD(val, align) (ALIGN_BACK(((val) + (align) - 1), (align)))
 
 void demo_syslog_print_do(const char *str) {
@@ -146,7 +148,7 @@ void demo_syslog_print_do(const char *str) {
 
 void demo_syslog_print(char *format, ...) {
   char str[256] = "";
-  va_list ap; /*!<¿É±ä²ÎÊı½á¹¹Ìå*/
+  va_list ap; /*!<å¯å˜å‚æ•°ç»“æ„ä½“*/
 
   va_start(ap, format);
   vsnprintf(str, 255, format, ap);
@@ -163,8 +165,8 @@ static void demo_signal_clean() {
 
   DEMOPRT((char *)" demo_signal_clean........start !\n");
 
-  // Òì³£±ÀÀ£Ê±£¬ĞèÒªÊÍ·Åopdevsdk_hikflow_ReleaseºÍopdevsdk_hikflow_ReleaseModel
-  // µ±Ç°Á½´ÎÏú»ÙËã·¨×ÊÔ´£¬µ×²ã»á´¥·¢±ÀÀ££¬ÔİÊ±ÆÁ±ÎËã·¨Ïú»Ù
+  // å¼‚å¸¸å´©æºƒæ—¶ï¼Œéœ€è¦é‡Šæ”¾opdevsdk_hikflow_Releaseå’Œopdevsdk_hikflow_ReleaseModel
+  // å½“å‰ä¸¤æ¬¡é”€æ¯ç®—æ³•èµ„æºï¼Œåº•å±‚ä¼šè§¦å‘å´©æºƒï¼Œæš‚æ—¶å±è”½ç®—æ³•é”€æ¯
   demo_alg_deinit();
   demo_alg_releaseBuffer();
   DEMOPRT((char *)"demo_alg_deinit\n");
@@ -179,7 +181,7 @@ static void demo_signal_clean() {
 
   int chan = abili.vinAbili.chnInfo[0].chan;
 
-  //!!!µÚÒ»²½£¬ÊÍ·ÅÒÑÉêÇëÍ¼ÏñĞÅÏ¢£¬·ñÔò»áÔì³Éµ×²ãvb×ÊÔ´ÎŞ·¨ÊÍ·Å!!!
+  //!!!ç¬¬ä¸€æ­¥ï¼Œé‡Šæ”¾å·²ç”³è¯·å›¾åƒä¿¡æ¯ï¼Œå¦åˆ™ä¼šé€ æˆåº•å±‚vbèµ„æºæ— æ³•é‡Šæ”¾!!!
   if (img1_frame.timeStamp) {
     opdevsdk_mscale_releaseFrame(mscale_hdl, &img1_frame);
     // DEMOPRT((char*)"releaseFrame img1_frame frmNum %d ts %d\n",
@@ -304,7 +306,7 @@ static int demo_img_copy(OPDEVSDK_VIDEO_FRAME_ST *yuvSrc,
   scale.rectParam.point.y = 0;
   scale.rectParam.width = yuvSrc->width;
   scale.rectParam.height = yuvSrc->height;
-  // ¼ÆËãÔ­Í¼µÄÖĞĞÄµã
+  // è®¡ç®—åŸå›¾çš„ä¸­å¿ƒç‚¹
   int src_center_x = yuvSrc->width / 2;
   int src_center_y = yuvSrc->height / 2;
   rect.width = yuvDst->width;
@@ -417,7 +419,7 @@ void *demo_video_get_thread(void *arg) {
     unsigned int start =
         (((unsigned int)tv.tv_sec) * 1000 + ((unsigned int)tv.tv_usec) / 1000);
 
-    // ×èÈû»ñÈ¡
+    // é˜»å¡è·å–
     ret = opdevsdk_vin_getFrame(chan, &vin_frame, -1);
     if (ret != OPDEVSDK_S_OK) {
       DEMOPRT((char *)"opdevsdk_vin_getFrame error ret = 0x%x\n", ret);
@@ -465,7 +467,7 @@ void *demo_video_get_thread(void *arg) {
  * @param[in] char* url : url
  * @param[in] char* buf : GET content buf
  * @param[in] uint32_t bufLen : buf size
- * @return  MS_OK£»others
+ * @return  MS_OKï¼›others
  */
 static int32_t GetMethodIsapiRetContent(char *url,
                                         OP_DEVSDK_MIME_UNIT_ST *in_buf,
@@ -643,7 +645,7 @@ static int demo_init_test() {
   ///< get abilities
   opdevsdk_sys_getAbility(&abili);
 
-  // printf the abilities,mmz»º´æ´óĞ¡ÔÚÉêÇëÊ±ÓÉÄÚºËÏŞÖÆ,»ù´¡¿â²»ÏŞÖÆ,Ä¬ÈÏÖÃ0
+  // printf the abilities,mmzç¼“å­˜å¤§å°åœ¨ç”³è¯·æ—¶ç”±å†…æ ¸é™åˆ¶,åŸºç¡€åº“ä¸é™åˆ¶,é»˜è®¤ç½®0
   /* DEMOPRT((char*)"opdevsdk_init mmSize %dKB cacheSize %dKB noCacheSize %dKB,
      jpegEncAbili %d jpegDecAbili %d scaleAbili %d\n", \ abili.mmSize,
      abili.cacheSize, abili.noCacheSize, abili.jpegEncAbili, abili.jpegDecAbili,
@@ -669,7 +671,7 @@ static int demo_mscale_prep(int *pchan, int *pgrpId, void **pms_hdl,
                             OPDEVSDK_VIN_CHN_ST *pvin_info) {
 
   int i, ret;
-  // ¿ªÆôvin
+  // å¼€å¯vin
   OPDEVSDK_SYS_ABILITY_ST abili = {0};
   opdevsdk_sys_getAbility(&abili);
   if (abili.vinAbili.chnNum < 1) {
@@ -688,7 +690,7 @@ static int demo_mscale_prep(int *pchan, int *pgrpId, void **pms_hdl,
   bvin_init = OP_TRUE;
   // DEMOPRT((char*)"opdevsdk_vin_init chan %d\n", chan);
 
-  // ÉèÖÃviÖ¡ÂÊ
+  // è®¾ç½®viå¸§ç‡
   ret = opdevsdk_vin_setFrameRate(chan, OPDEVSDK_VIDEO_FRAME_RATE_12_5);
   if (ret != OPDEVSDK_S_OK) {
     DEMOPRT((char *)"opdevsdk_vin_setFrameRate error ret = 0x%x\n", ret);
@@ -698,19 +700,19 @@ static int demo_mscale_prep(int *pchan, int *pgrpId, void **pms_hdl,
   OPDEVSDK_VIN_CHN_ST *pchn_info = &abili.vinAbili.chnInfo[0];
   memcpy(pvin_info, pchn_info, sizeof(OPDEVSDK_VIN_CHN_ST));
 
-  // vbpool test,½¨Òé°´·Ö±æÂÊ½µĞòÊäÈë
-  //!!!×¢Òâ!!!mem´´½¨µÄvb pool grpÒªºÍmscaleµÄËõ·Å·Ö±æÂÊÆ¥Åä£¬·ñÔò»á°ó¶¨Ê§°Ü;
-  // ÀıÈç£¬vinÊäÈë200w£¬mscaleËõ·ÅÊä³ö4Â··Ö±æÂÊ:200w(1080p),720p;
+  // vbpool test,å»ºè®®æŒ‰åˆ†è¾¨ç‡é™åºè¾“å…¥
+  //!!!æ³¨æ„!!!memåˆ›å»ºçš„vb pool grpè¦å’Œmscaleçš„ç¼©æ”¾åˆ†è¾¨ç‡åŒ¹é…ï¼Œå¦åˆ™ä¼šç»‘å®šå¤±è´¥;
+  // ä¾‹å¦‚ï¼Œvinè¾“å…¥200wï¼Œmscaleç¼©æ”¾è¾“å‡º4è·¯åˆ†è¾¨ç‡:200w(1080p),720p;
   OPDEVSDK_MEM_VB_POOL_GRP_ST vb_pool_grp = {0};
   int tmp_w = 0, tmp_h = 0;
   vb_pool_grp.poolCnt = 2;
   snprintf(vb_pool_grp.pool[0].name, sizeof(vb_pool_grp.pool[0].name), "img1");
-  vb_pool_grp.pool[0].poolId = 0; // poolId,´Ë´¦½¨ÒéÖÃ0
-  // blkCnt¶ÔÓ¦Ëõ·Åºóvb»º´æÊıÁ¿£¬¸ù¾İĞèÒª»º´æÍ¼ÏñÉî¶È£¬°´ĞèÉêÇë£¬×îÉÙ2¸ö£¬½¨ÒéÅäÖÃ4¸öÒÔÉÏ(½¨Òé¸ù¾İËã·¨ĞèÒª»º´æ¸öÊı£¬¶îÍâ¶àÉêÇë2¸öÓÃÓÚmscaleËõ·Å)
-  //!!!×¢Òâ!!!
-  //!vb»º´æÉî¶ÈÓÃÓÚmscaleËõ·ÅºÍÖÇÄÜËã·¨´¦Àí£¬ÈçÄ³·Ö±æÂÊµÄvbÈ«²¿±»Õ¼ÓÃ(ÖÇÄÜËã·¨getºó²»release)£¬»áµ¼ÖÂmscaleËõ·ÅÃ»ÓĞvb¿ÉÓÃ£¬´Ó¶øÓ°ÏìºóĞøËõ·ÅÊÓÆµÊä³ö
+  vb_pool_grp.pool[0].poolId = 0; // poolId,æ­¤å¤„å»ºè®®ç½®0
+  // blkCntå¯¹åº”ç¼©æ”¾åvbç¼“å­˜æ•°é‡ï¼Œæ ¹æ®éœ€è¦ç¼“å­˜å›¾åƒæ·±åº¦ï¼ŒæŒ‰éœ€ç”³è¯·ï¼Œæœ€å°‘2ä¸ªï¼Œå»ºè®®é…ç½®4ä¸ªä»¥ä¸Š(å»ºè®®æ ¹æ®ç®—æ³•éœ€è¦ç¼“å­˜ä¸ªæ•°ï¼Œé¢å¤–å¤šç”³è¯·2ä¸ªç”¨äºmscaleç¼©æ”¾)
+  //!!!æ³¨æ„!!!
+  //!vbç¼“å­˜æ·±åº¦ç”¨äºmscaleç¼©æ”¾å’Œæ™ºèƒ½ç®—æ³•å¤„ç†ï¼Œå¦‚æŸåˆ†è¾¨ç‡çš„vbå…¨éƒ¨è¢«å ç”¨(æ™ºèƒ½ç®—æ³•getåä¸release)ï¼Œä¼šå¯¼è‡´mscaleç¼©æ”¾æ²¡æœ‰vbå¯ç”¨ï¼Œä»è€Œå½±å“åç»­ç¼©æ”¾è§†é¢‘è¾“å‡º
   vb_pool_grp.pool[0].blkCnt = 4;
-  ///!!!×¢Òâ!!!vb»º´æµÄ¿í¸ß¾ùĞèÏòÉÏ¶ÔÆë²Ù×÷£¬·ñÔògrpId°ó¶¨mscale¿ÉÄÜ»áÊ§°Ü
+  ///!!!æ³¨æ„!!!vbç¼“å­˜çš„å®½é«˜å‡éœ€å‘ä¸Šå¯¹é½æ“ä½œï¼Œå¦åˆ™grpIdç»‘å®šmscaleå¯èƒ½ä¼šå¤±è´¥
   tmp_w = ALIGN_FOWARD(pchn_info->width, VB_POOL_W_H_ALIGN);  // 1920
   tmp_h = ALIGN_FOWARD(pchn_info->height, VB_POOL_W_H_ALIGN); // 1080
   vb_pool_grp.pool[0].blkSize = tmp_w * tmp_h * 3 / 2;
@@ -756,7 +758,7 @@ static int demo_mscale_prep(int *pchan, int *pgrpId, void **pms_hdl,
   *pms_hdl = ms_hdl;
   DEMOPRT((char *)"opdevsdk_mscale_create ok\n");
 
-  // grp id °ó¶¨,grpid¶ÔÓ¦µÄvb poolĞÅÏ¢ĞèÒªºÍmscale_hdlÆ¥Åä
+  // grp id ç»‘å®š,grpidå¯¹åº”çš„vb poolä¿¡æ¯éœ€è¦å’Œmscale_hdlåŒ¹é…
   ret = opdevsdk_mscale_bindVbPoolGrp(ms_hdl, grpId);
   if (ret != OPDEVSDK_S_OK) {
     DEMOPRT((char *)"opdevsdk_mscale_create error ret = 0x%x\n", ret);
@@ -925,7 +927,7 @@ static int demo_alg_proc(OPDEVSDK_VIDEO_FRAME_INFO_ST *pfrm,
 
   for (i = 0; i < 8; i++) {
     ptarget[i].id = i + 1;
-    ptarget[i].trace_time = 0; // 0-Ä¿±ê¿ò,1-Ä¿±ê¹ì¼£
+    ptarget[i].trace_time = 0; // 0-ç›®æ ‡æ¡†,1-ç›®æ ‡è½¨è¿¹
     ptarget[i].color = 0;
     ptarget[i].region.pointNum = 4;
     ptarget[i].region.point[0].x = 0.1 + i * 0.1;
@@ -1013,7 +1015,7 @@ void *demo_alg_proc_thread(void *arg) {
     pack_target.tgtList.pTgt = target;
     int check_flag = 0;
 
-    ret = demo_alg_proc_fromCamera(pfrm, &pack_target, check_weight_limit);
+    ret = demo_alg_proc_fromCamera(pfrm, &pack_target, check_weight_limit, plate_number);
     if (ret != OPDEVSDK_S_OK) {
       DEMOPRT((char *)"demo_alg_process error  ret = 0x%x\n", ret);
     }
@@ -1027,7 +1029,7 @@ void *demo_alg_proc_thread(void *arg) {
     // DEMOPRT((char*)"put target frm %d, ts %llu\n", pfrm->frmNum,
     // pfrm->timeStamp);
 
-    // Ä£ÄâËã·¨±¨¾¯,30Ö¡¼ä¸ô
+    // æ¨¡æ‹Ÿç®—æ³•æŠ¥è­¦,30å¸§é—´éš”
     memset(&alarm, 0, sizeof(alarm));
     if (frm_num - alarm_frm >= 30) {
       if (pack_target.tgtList.tgtNum) {
@@ -1046,10 +1048,10 @@ void *demo_alg_proc_thread(void *arg) {
       }
     }
 
-    // Ä¿±ê´ò°ü
+    // ç›®æ ‡æ‰“åŒ…
     pack_target.timeType = OPDEVSDK_POS_TIME_TYPE_1K;
-    pack_target.packId = 0;                         // Ô¤Áô
-    pack_target.timeStamp = pfrm->timeStamp / 1000; // Ê±¼ä´ÁÌîĞ´Êµ¼ÊyuvÊ±¼ä´Á
+    pack_target.packId = 0;                         // é¢„ç•™
+    pack_target.timeStamp = pfrm->timeStamp / 1000; // æ—¶é—´æˆ³å¡«å†™å®é™…yuvæ—¶é—´æˆ³
     pack_target.attribute = OPDEVSDK_POS_POLYGON_ATTRI_NORMAL;
     pack_target.tgtList.tgtNum = 8;
     pack_target.tgtList.pTgt = &target[0];
@@ -1059,7 +1061,7 @@ void *demo_alg_proc_thread(void *arg) {
       DEMOPRT((char *)"opdevsdk_videoDemoVca error  ret = 0x%x\n", ret);
     }
 
-    // ¹æÔò´ò°ü
+    // è§„åˆ™æ‰“åŒ…
     OPDEVSDK_POS_RULE_ST rule_info[2] = {{0}};
     rule_info[0].id = 1;
     rule_info[0].enable = 1;
@@ -1083,7 +1085,7 @@ void *demo_alg_proc_thread(void *arg) {
     rule_info[1].polygon.point[3].y = 0.2;
     OPDEVSDK_POS_RULE_LIST_INFO_ST rule = {OPDEVSDK_POS_TIME_TYPE_1K};
     rule.timeType = OPDEVSDK_POS_TIME_TYPE_1K;
-    rule.timeStamp = pfrm->timeStamp / 1000; // Ê±¼ä´ÁÌîĞ´Êµ¼ÊyuvÊ±¼ä´Á
+    rule.timeStamp = pfrm->timeStamp / 1000; // æ—¶é—´æˆ³å¡«å†™å®é™…yuvæ—¶é—´æˆ³
     rule.attribute = OPDEVSDK_POS_POLYGON_ATTRI_NORMAL;
     rule.ruleList.ruleNum = 2;
     rule.ruleList.pRule = &rule_info[0];
@@ -1093,7 +1095,7 @@ void *demo_alg_proc_thread(void *arg) {
       // return -1;
     }
 
-    // ±¨¾¯Ä¿±ê
+    // æŠ¥è­¦ç›®æ ‡
     if (frm_num % 300 == 0) {
       static int idx = 0;
       alarm.ruleInfo.id = rule_info[idx].id;
@@ -1146,7 +1148,7 @@ void *demo_vin_get_thread(void *arg)
   // OPDEVSDK_SYS_THREAD_NAME_ST name = {"video_get"};
 
   int yuv_lost_times = 0;
-  // h7Æ½Ì¨£¬Ë«ºËcpu£¬ÖÇÄÜÓÅÏÈÅÜµÚ2ºË
+  // h7å¹³å°ï¼ŒåŒæ ¸cpuï¼Œæ™ºèƒ½ä¼˜å…ˆè·‘ç¬¬2æ ¸
   // devsdk_pthrd_set_thread_bind_core(1);
   // devsdk_pthrd_set_name("vin_get_thrd");
 
@@ -1169,7 +1171,7 @@ void *demo_vin_get_thread(void *arg)
     unsigned int start =
         (((unsigned int)tv.tv_sec) * 1000 + ((unsigned int)tv.tv_usec) / 1000);
 
-    // ×èÈû»ñÈ¡
+    // é˜»å¡è·å–
     ret = opdevsdk_vin_getFrame(chan, &vin_frame, -1);
     if (ret != OPDEVSDK_S_OK) {
       DEMOPRT((char *)"opdevsdk_vin_getFrame error ret = 0x%x\n", ret);
@@ -1186,7 +1188,7 @@ void *demo_vin_get_thread(void *arg)
     // }
     timeStamp = vin_frame.timeStamp;
 
-    // opdevsdk_mscale_sendFrame±ØĞëÊ¹ÓÃvb»º´æ,·ñÔò¿ÉÄÜsendÊ§°Ü
+    // opdevsdk_mscale_sendFrameå¿…é¡»ä½¿ç”¨vbç¼“å­˜,å¦åˆ™å¯èƒ½sendå¤±è´¥
     ret = opdevsdk_mscale_sendFrame(mscale_hdl, &vin_frame);
     if (ret != OPDEVSDK_S_OK) {
       DEMOPRT((char *)"opdevsdk_mscale_sendFrame  ret = 0x%x\n", ret);
@@ -1268,13 +1270,13 @@ void *demo_alg_proc_thread_2(void *arg)
 
   while (thread_flg) {
     DEMOPRT((char*)"demo_alg_process: camera!");
-    // ×èÈûget
+    // é˜»å¡get
     ret = opdevsdk_mscale_getFrame(mscale_hdl, img1, &img1_frame, -1);
     if (ret != OPDEVSDK_S_OK) {
       DEMOPRT((char *)"demo_alg_process error  ret = 0x%x\n", ret);
       mscale_get_err++;
     }
-    // img2 get£¬Ò²¿Éµ¥¶À¿ªÒ»¸öÏß³Ì»ñÈ¡
+    // img2 getï¼Œä¹Ÿå¯å•ç‹¬å¼€ä¸€ä¸ªçº¿ç¨‹è·å–
     ret = opdevsdk_mscale_getFrame(mscale_hdl, img2, &img2_frame, -1);
     if (ret != OPDEVSDK_S_OK) {
       DEMOPRT((char *)"demo_alg_process error  ret = 0x%x\n", ret);
@@ -1292,7 +1294,7 @@ void *demo_alg_proc_thread_2(void *arg)
     pack_target.tgtList.pTgt = &target[0];
     int check_weight_result = -1;
     check_weight_result = demo_alg_proc_fromCamera(&img2_frame, &pack_target,
-                                                   check_weight_limit);
+                                                   check_weight_limit, plate_number);
     DEMOPRT((char *)"*********check_weight_result:%d*******\n",
             check_weight_result);
     gettimeofday(&tv, NULL);
@@ -1306,13 +1308,13 @@ void *demo_alg_proc_thread_2(void *arg)
               img1_frame.timeStamp);
     }
 
-    // Ä¿±ê´ò°ü
+    // ç›®æ ‡æ‰“åŒ…
     pack_target.timeType = OPDEVSDK_POS_TIME_TYPE_1K;
-    pack_target.packId = 0; // Ô¤Áô
+    pack_target.packId = 0; // é¢„ç•™
     pack_target.timeStamp =
         timeStamp /
         1000; // img1_frame.timeStamp /
-              // 1000;//hikflowËã·¨´¦ÀíºÄÊ±¹ı´ó£¬Ê±¼ä´ÁÈ¡×îĞÂÊ±¼ä´Á
+              // 1000;//hikflowç®—æ³•å¤„ç†è€—æ—¶è¿‡å¤§ï¼Œæ—¶é—´æˆ³å–æœ€æ–°æ—¶é—´æˆ³
     pack_target.attribute = OPDEVSDK_POS_POLYGON_ATTRI_NORMAL;
     // pack_target.tgtList.tgtNum  = 8;
     pack_target.tgtList.pTgt = &target[0];
@@ -1350,13 +1352,13 @@ void *demo_alg_proc_thread_2(void *arg)
     }
 
     if (check_weight_flag == 1) {
-      // ×èÈûget
+      // é˜»å¡get
       ret = opdevsdk_mscale_getFrame(mscale_hdl, img1, &img1_frame, -1);
       if (ret != OPDEVSDK_S_OK) {
         DEMOPRT((char *)"demo_alg_process error  ret = 0x%x\n", ret);
         mscale_get_err++;
       }
-      // img2 get£¬Ò²¿Éµ¥¶À¿ªÒ»¸öÏß³Ì»ñÈ¡
+      // img2 getï¼Œä¹Ÿå¯å•ç‹¬å¼€ä¸€ä¸ªçº¿ç¨‹è·å–
       ret = opdevsdk_mscale_getFrame(mscale_hdl, img2, &img2_frame, -1);
       if (ret != OPDEVSDK_S_OK) {
         DEMOPRT((char *)"demo_alg_process error  ret = 0x%x\n", ret);
@@ -1374,7 +1376,7 @@ void *demo_alg_proc_thread_2(void *arg)
       pack_target.tgtList.pTgt = &target[0];
       int check_weight_result = -1;
       check_weight_result = demo_alg_proc_fromCamera(&img2_frame, &pack_target,
-                                                     check_weight_limit);
+                                                     check_weight_limit, plate_number);
       DEMOPRT((char *)"*********check_weight_result:%d*******\n",
               check_weight_result);
       gettimeofday(&tv, NULL);
@@ -1388,13 +1390,13 @@ void *demo_alg_proc_thread_2(void *arg)
                 img1_frame.timeStamp);
       }
 
-      // Ä¿±ê´ò°ü
+      // ç›®æ ‡æ‰“åŒ…
       pack_target.timeType = OPDEVSDK_POS_TIME_TYPE_1K;
-      pack_target.packId = 0; // Ô¤Áô
+      pack_target.packId = 0; // é¢„ç•™
       pack_target.timeStamp =
           timeStamp /
           1000; // img1_frame.timeStamp /
-                // 1000;//hikflowËã·¨´¦ÀíºÄÊ±¹ı´ó£¬Ê±¼ä´ÁÈ¡×îĞÂÊ±¼ä´Á
+                // 1000;//hikflowç®—æ³•å¤„ç†è€—æ—¶è¿‡å¤§ï¼Œæ—¶é—´æˆ³å–æœ€æ–°æ—¶é—´æˆ³
       pack_target.attribute = OPDEVSDK_POS_POLYGON_ATTRI_NORMAL;
       // pack_target.tgtList.tgtNum  = 8;
       pack_target.tgtList.pTgt = &target[0];
@@ -1449,6 +1451,7 @@ void *demo_alg_proc_thread_2(void *arg)
  *
  * @return           0 if successful, otherwise an error number returned
  */
+// TODO:  æä¾›POSTæ¥å£ï¼Œè¿”å›jsonæ•°æ®ï¼ŒåŒ…å«æ£€æµ‹åˆ°çš„è½¦ç‰Œå·, å…¶ä»–ä¿¡æ¯ï¼Ÿ
 void *demo_socket_proc(void *arg)
 // static void demo_socket_proc()
 {
@@ -1505,37 +1508,42 @@ void *demo_socket_proc(void *arg)
     if (ret > 0) {
       opdevsdk_write_log(OPDEVSDK_LOG_DEBUG, (char *)"@@@server recv: %s@@@\n",
                          receive_buf);
-      // ÅĞ¶ÏÊÇ·ñÊÇ´«²ÎÊıµÄ
+      // åˆ¤æ–­æ˜¯å¦æ˜¯ä¼ å‚æ•°çš„
       if ((NULL != strstr(receive_buf, "/config?weight_limit="))) {
         char *p = strstr(receive_buf, "/config?weight_limit=");
         char *p2 = strstr(receive_buf, "end");
         *p2 = '\0';
         p += strlen("/config?weight_limit=");
         int check_weight_limit = atoi(p);
-        DEMOPRT((char *)"ÉèÖÃµØ°õ²ÎÊıÎª£º%d", check_weight_limit);
-      } else // ²»´«²ÎÊı£¬ÅĞ¶Ï³µÁ¾ÊÇ·ñÔÚ°õÉÏ
+        DEMOPRT((char *)"è®¾ç½®åœ°ç£…å‚æ•°ä¸ºï¼š%d", check_weight_limit);
+      } else // ä¸ä¼ å‚æ•°ï¼Œåˆ¤æ–­è½¦è¾†æ˜¯å¦åœ¨ç£…ä¸Š
       {
         check_weight_flag = 1;
       }
     }
 
-    sleep(0.5); // È·±£ÁíÒ»¸ö½ø³ÌÓĞÏìÓ¦£¬¼ì²écheck_weight_flag =
-                // 1Ê±¸ø³öck_weight_result
+    sleep(0.5); // ç¡®ä¿å¦ä¸€ä¸ªè¿›ç¨‹æœ‰å“åº”ï¼Œæ£€æŸ¥check_weight_flag =
+                // 1æ—¶ç»™å‡ºck_weight_result
 
     // char *json_string = "HTTP/1.1 200 OK \n\r Content-Type:
     // application/json;charset=UTF-8 \n\r "; char *s2 = "[{'check':1}]\n\r";
     // strncat(json_string, s2, strlen(s2)+1);
     char json_string[1024] = "HTTP/1.1 200 OK \n\r";
-    if (check_weight_result == 0) {
-      const char *s2 = " {\"check\":0}\n\r";
-      strncat(json_string, s2, strlen(s2));
-    } else if (check_weight_result == 1) {
-      const char *s2 = " {\"check\":1}\n\r";
-      strncat(json_string, s2, strlen(s2));
-    } else {
-      const char *s2 = " {\"check\":-1}\n\r";
-      strncat(json_string, s2, strlen(s2));
-    }
+    // if (check_weight_result == 0) {
+    //   const char *s2 = " {\"check\":0}\n\r";
+    //   char body[64] = {0};
+    //   sprintf(body, "Content-Length: %s\n\r", plate_number);
+    //   strncat(json_string, s2, strlen(s2));
+    // } else if (check_weight_result == 1) {
+    //   const char *s2 = " {\"check\":1}\n\r";
+    //   strncat(json_string, s2, strlen(s2));
+    // } else {
+    //   const char *s2 = " {\"check\":-1}\n\r";
+    //   strncat(json_string, s2, strlen(s2));
+    // }
+    char body[64] = {0};
+    sprintf(body, " {\"plate_number\": %s} \n\r", plate_number);
+    strncat(json_string, body, strlen(body));
     ret = write(connect_sock, json_string, strlen(json_string));
     if (ret < 0) {
       opdevsdk_write_log(OPDEVSDK_LOG_DEBUG,
@@ -1549,10 +1557,10 @@ void *demo_socket_proc(void *arg)
 }
 
 /**
- * @brief            ¿ªÆôcore dump
+ * @brief            å¼€å¯core dump
  *
  * @param[in]        pCorePid        PID
- * @param[in]        pCorePath       ±£´æÂ·¾¶
+ * @param[in]        pCorePath       ä¿å­˜è·¯å¾„
  *
  * @param[out]       none
  *
@@ -1627,7 +1635,7 @@ int demo_core_dump_open(char *pCorePid, char *pCorePath) {
 }
 
 /**
- * @brief            Éú³Écore dumpĞèÒªµÄÂ·¾¶,²ÎÊıÉèÖÃ
+ * @brief            ç”Ÿæˆcore dumpéœ€è¦çš„è·¯å¾„,å‚æ•°è®¾ç½®
  *
  * @param[in]        none
  *
@@ -1639,12 +1647,12 @@ void demo_set_core_dump(void) {
   char szCorePid[32];
   char szCorePath[128] = {"demo_core_dump"};
 
-  /*ÎªÁËÎ¨Ò»Çø·ÖcoreÎÄ¼ş,ÎÄ¼şÃû¸ñÊ½×·¼ÓIPµØÖ·¼°Éè±¸ĞòÁĞºÅ*/
+  /*ä¸ºäº†å”¯ä¸€åŒºåˆ†coreæ–‡ä»¶,æ–‡ä»¶åæ ¼å¼è¿½åŠ IPåœ°å€åŠè®¾å¤‡åºåˆ—å·*/
   strcpy(szCorePid, "1");
 
-  /*core±£´æÄ¿Â¼*/
+  /*coreä¿å­˜ç›®å½•*/
   strcpy(szCorePath, "/coredump/");
-  /// ÅĞ¶Ïg_stat_dstaÊÇ·ñÓĞĞ´È¨ÏŞ,ÈôÎŞÔò·µ»Ø´íÎó
+  /// åˆ¤æ–­g_stat_dstaæ˜¯å¦æœ‰å†™æƒé™,è‹¥æ— åˆ™è¿”å›é”™è¯¯
   int re = access(szCorePath, W_OK);
   if (re != 0) {
     re = mkdir(szCorePath, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
@@ -1653,7 +1661,7 @@ void demo_set_core_dump(void) {
     }
   }
 
-  /*core ÏµÍ³²ÎÊıĞÅÏ¢ */
+  /*core ç³»ç»Ÿå‚æ•°ä¿¡æ¯ */
   strcat(szCorePath, "core-%s-%e-%p-%t");
 
   if (0 != demo_core_dump_open(szCorePid, szCorePath)) {
@@ -1737,7 +1745,7 @@ void catch_sigsegv(void) {
   }
 
   // memory crossover
-  // SIGKILL ºÍSIGSTOP²»Ö§³ÖĞÅºÅ×Ô¶¨Òå
+  // SIGKILL å’ŒSIGSTOPä¸æ”¯æŒä¿¡å·è‡ªå®šä¹‰
 
   if (sigaction(SIGABRT, &action, NULL) < 0) {
     perror("sigaction");
@@ -1752,8 +1760,8 @@ void catch_sigsegv(void) {
   actionPipe.sa_handler = SIG_IGN;
   actionPipe.sa_flags = 0;
 
-  /// Ôö¼ÓSIGPIPEĞÅºÅºöÂÔ
-  /// TODO:  [WARNING]´Ë´¦±¨´í,´ı²é
+  /// å¢åŠ SIGPIPEä¿¡å·å¿½ç•¥
+  /// TODO: [WARNING]æ­¤å¤„æŠ¥é”™,å¾…æŸ¥
   if (sigaction(SIGPIPE, &actionPipe, 0) < 0) {
     perror("sigaction");
   }
@@ -1800,8 +1808,8 @@ int main(int argc, char *argv[]) {
   catch_sigsegv();
 
   // sleep(8);
-  //!!!×¢Òâ!!!,µ±Ç°demoÊ¾ÀıÖĞ»áÓĞ´óÁ¿´òÓ¡£¬DEMOPRTÖ±½Óµ÷ÓÃº¯Êıdevsdk_print£¬»áÔÚÉè±¸Ä¿Â¼(/home/opdevsdk/.../dlog/£¬¿ÉÄÜÓĞµ÷Õû)ÏÂ¼ÇÂ¼logĞÅÏ¢£¬
-  // Êµ¼ÊÏîÄ¿ÖĞ£¬²»½¨Òé½«ËùÓĞ´òÓ¡ĞÅÏ¢¼ÇÂ¼£¬½¨Òé¾«¼ò¼ÇÂ¼£¬½ö¼ÇÂ¼ÓĞÓÃĞÅÏ¢£¬
+  //!!!æ³¨æ„!!!,å½“å‰demoç¤ºä¾‹ä¸­ä¼šæœ‰å¤§é‡æ‰“å°ï¼ŒDEMOPRTç›´æ¥è°ƒç”¨å‡½æ•°devsdk_printï¼Œä¼šåœ¨è®¾å¤‡ç›®å½•(/home/opdevsdk/.../dlog/ï¼Œå¯èƒ½æœ‰è°ƒæ•´)ä¸‹è®°å½•logä¿¡æ¯ï¼Œ
+  // å®é™…é¡¹ç›®ä¸­ï¼Œä¸å»ºè®®å°†æ‰€æœ‰æ‰“å°ä¿¡æ¯è®°å½•ï¼Œå»ºè®®ç²¾ç®€è®°å½•ï¼Œä»…è®°å½•æœ‰ç”¨ä¿¡æ¯ï¼Œ
   DEMOPRT((char *)"########################################### opdevsdk debug  "
                   "    #########################################\n");
 
@@ -1835,7 +1843,6 @@ int main(int argc, char *argv[]) {
     pthread_join(yuv_proc_tid, NULL);
   } 
   else if (0 == strcmp("YUV", argv[2])) {
-    // TODO:  ÊÓÆµÁ÷
     demo_alg_get_res(&alg_width, &alg_height);
     DEMOPRT((char*)"--- alg_width %d alg_height %d MSCALE_TEST %d\n", alg_width, alg_height, MSCALE_TEST);
 
@@ -1843,7 +1850,6 @@ int main(int argc, char *argv[]) {
     void *ms_hdl = NULL;
     int chan = 0;
     OPDEVSDK_VIN_CHN_ST vin_info = {0};
-    // TODO:  Àí½âÒ»ÏÂ
 #if MSCALE_TEST
     ret = demo_mscale_prep(&chan, &grpId, &ms_hdl, &vin_info);
     if (ret != 0) {
@@ -1853,7 +1859,7 @@ int main(int argc, char *argv[]) {
     groupId = grpId;
     mscale_hdl = ms_hdl;
 #else
-    // ¿ªÆôvin
+    // å¼€å¯vin
     OPDEVSDK_SYS_ABILITY_ST abili = {0};
     opdevsdk_sys_getAbility(&abili);
     if (abili.vinAbili.chnNum < 1) {
@@ -1871,7 +1877,7 @@ int main(int argc, char *argv[]) {
     bvin_init = OP_TRUE;
     // DEMOPRT((char*)"opdevsdk_vin_init chan %d\n", chan);
 
-    // ÉèÖÃviÖ¡ÂÊ
+    // è®¾ç½®viå¸§ç‡
     ret = opdevsdk_vin_setFrameRate(chan, OPDEVSDK_VIDEO_FRAME_RATE_6_25);
     if (ret != OPDEVSDK_S_OK) {
       DEMOPRT((char *)"opdevsdk_vin_setFrameRate error ret = 0x%x\n", ret);
@@ -1892,7 +1898,7 @@ int main(int argc, char *argv[]) {
       /*getting YUV frames to algorithm buffer*/
       ret =
           pthread_create(&yuv_proc_tid, NULL, demo_vin_get_thread, mscale_hdl);
-      // Ïß³ÌÓÅÏÈ¼¶Ä¬ÈÏÌî80£¬Õ»´óĞ¡¿ÉÌî0(µ±Ç°ÄÚ²¿ÏŞÖÆ×îµÍ2M),argsÎªÍ¸´«²ÎÊı,²»ĞèÒªÌî0£¬ºóÃæ²»ÌîÍ¸´«²ÎÊı
+      // çº¿ç¨‹ä¼˜å…ˆçº§é»˜è®¤å¡«80ï¼Œæ ˆå¤§å°å¯å¡«0(å½“å‰å†…éƒ¨é™åˆ¶æœ€ä½2M),argsä¸ºé€ä¼ å‚æ•°,ä¸éœ€è¦å¡«0ï¼Œåé¢ä¸å¡«é€ä¼ å‚æ•°
       if (ret != 0) {
         DEMOPRT((char *)"devsdk_pthrd_creat_pthread error ret = 0x%x\n", ret);
         return ret;
@@ -1925,7 +1931,7 @@ int main(int argc, char *argv[]) {
       /*getting YUV frames to algorithm buffer*/
       ret = pthread_create(&yuv_proc_tid, NULL, &demo_video_get_thread,
                            NULL);
-      // Ïß³ÌÓÅÏÈ¼¶Ä¬ÈÏÌî80£¬Õ»´óĞ¡¿ÉÌî0(µ±Ç°ÄÚ²¿ÏŞÖÆ×îµÍ2M),argsÎªÍ¸´«²ÎÊı,²»ĞèÒªÌî0£¬ºóÃæ²»ÌîÍ¸´«²ÎÊı
+      // çº¿ç¨‹ä¼˜å…ˆçº§é»˜è®¤å¡«80ï¼Œæ ˆå¤§å°å¯å¡«0(å½“å‰å†…éƒ¨é™åˆ¶æœ€ä½2M),argsä¸ºé€ä¼ å‚æ•°,ä¸éœ€è¦å¡«0ï¼Œåé¢ä¸å¡«é€ä¼ å‚æ•°
       if (ret != 0) {
         DEMOPRT((char *)"devsdk_pthrd_creat_pthread error ret = 0x%x\n", ret);
         return ret;
@@ -1936,6 +1942,13 @@ int main(int argc, char *argv[]) {
                            NULL);
       if (ret != 0) {
         DEMOPRT((char *)"devsdk_pthrd_creat_pthread error ret = 0x%x\n", ret);
+        return ret;
+      }
+
+      // TODO:  socket çº¿ç¨‹
+      ret = pthread_create(&socket_proc_tid, NULL, demo_socket_proc, NULL);
+      if (ret != 0) {
+        DEMOPRT((char *)"socket_pthrd_creat_pthread error ret = 0x%x\n", ret);
         return ret;
       }
     }

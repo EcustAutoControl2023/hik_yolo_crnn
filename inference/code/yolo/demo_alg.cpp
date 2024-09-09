@@ -817,7 +817,7 @@ int demo_alg_init(char *config_file_path) {
  */
 int demo_alg_proc_fromCamera(OPDEVSDK_VIDEO_FRAME_INFO_ST *pfrm,
                              OPDEVSDK_POS_TARGET_LIST_INFO_ST *ptarget,
-                             int check_weight_limit) {
+                             int check_weight_limit, char *detect_plate_number) {
   // int check_weight_limit  地磅所在的行的最大值
   // int check_flag = -1;
   int check_flag = 0;
@@ -1014,7 +1014,9 @@ int demo_alg_proc_fromCamera(OPDEVSDK_VIDEO_FRAME_INFO_ST *pfrm,
     }
     if (arr != NULL)
       free(arr);
+    // TODO:  过滤异常检测结果
     DEMOPRT((char *)"车牌号为：%s\n", palte_name);
+    strcpy(detect_plate_number, palte_name);
 
     free(palte_name);
 

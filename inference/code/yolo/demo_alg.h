@@ -106,7 +106,8 @@ int demo_alg_init(char *config_file_path);
 * @return       status
 * @see
 */
-int demo_alg_proc_fromCamera(OPDEVSDK_VIDEO_FRAME_INFO_ST *pfrm,OPDEVSDK_POS_TARGET_LIST_INFO_ST *ptarget, int check_weight_limit);
+// TODO:  更改变量 check_weight_limit -> detect_plate_number
+int demo_alg_proc_fromCamera(OPDEVSDK_VIDEO_FRAME_INFO_ST *pfrm,OPDEVSDK_POS_TARGET_LIST_INFO_ST *ptarget, int check_weight_limit, char *detect_plate_number);
 
 /** 
 * @brief        demo_alg_proc_fromFile

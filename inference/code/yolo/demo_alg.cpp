@@ -1014,9 +1014,17 @@ int demo_alg_proc_fromCamera(OPDEVSDK_VIDEO_FRAME_INFO_ST *pfrm,
     }
     if (arr != NULL)
       free(arr);
-    // TODO:  过滤异常检测结果
     DEMOPRT((char *)"车牌号为：%s\n", palte_name);
-    strcpy(detect_plate_number, palte_name);
+    // 检测plate_number是否合法, 通过字符串长度判断
+    DEMOPRT((char *)"车牌号长度为：%d\n", strlen(palte_name));
+    if (strlen(palte_name) < 9) {
+      DEMOPRT((char *)"过滤异常车牌\n");
+    }
+    else{
+      // TODO:  可能检测出多个长度大于9的车牌
+      // 如何处理？ 维护一个车牌号列表？
+      strcpy(detect_plate_number, palte_name);
+    }
 
     free(palte_name);
 

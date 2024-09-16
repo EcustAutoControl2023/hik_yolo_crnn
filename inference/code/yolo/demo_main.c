@@ -1528,6 +1528,7 @@ void *demo_socket_proc(void *arg)
     // char *json_string = "HTTP/1.1 200 OK \n\r Content-Type:
     // application/json;charset=UTF-8 \n\r "; char *s2 = "[{'check':1}]\n\r";
     // strncat(json_string, s2, strlen(s2)+1);
+    // 返回请求时间和车牌号
     char json_string[1024] = "HTTP/1.1 200 OK \n\r";
     // if (check_weight_result == 0) {
     //   const char *s2 = " {\"check\":0}\n\r";
@@ -1541,8 +1542,16 @@ void *demo_socket_proc(void *arg)
     //   const char *s2 = " {\"check\":-1}\n\r";
     //   strncat(json_string, s2, strlen(s2));
     // }
-    char body[64] = {0};
-    sprintf(body, " {\"plate_number\": %s} \n\r", plate_number);
+    char body[256] = {0};
+    char current_time[256] = {0};
+    time_t timep;
+    struct tm *p;
+    time(&timep);
+    p = gmtime(&timep);
+    sprintf(current_time, "%d-%d-%d %d:%d:%d", 1900 + p->tm_year, 1 + p->tm_mon,
+            p->tm_mday, 8 + p->tm_hour, p->tm_min, p->tm_sec);
+    sprintf(body, " {\"plate_number\": %s, \"current_time\": %s}\n\r",
+            plate_number, current_time);
     strncat(json_string, body, strlen(body));
     ret = write(connect_sock, json_string, strlen(json_string));
     if (ret < 0) {
@@ -1945,7 +1954,6 @@ int main(int argc, char *argv[]) {
         return ret;
       }
 
-      // TODO:  socket 线程
       ret = pthread_create(&socket_proc_tid, NULL, demo_socket_proc, NULL);
       if (ret != 0) {
         DEMOPRT((char *)"socket_pthrd_creat_pthread error ret = 0x%x\n", ret);

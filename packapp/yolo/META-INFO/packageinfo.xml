@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<packageinfo xmlns="http://www.hikvision.com/compomentModel/0.5.0/packageinfo" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.hikvision.com/compomentModel/0.5.0/packageinfo ../../schema/0.5.0/packageinfo.xsd" docVersion="0.5.0">
+  <package xmlns="" type="HEOPPack" id="demo" version="1.0.0" />
+  <params xmlns="">
+    <param id="vendor.id" value="HIKVISION" />
+    <param id="vendor.zh_CN" value="海康威视" />
+    <param id="vendor.en_US" value="HIKVISION" />
+    <param id="UUID" value="d72a4aea-ecb1-483d-ae4e-57ghttpsdemo"/>
+    <param id="language" value="CN" />
+  </params>
+</packageinfo>
+

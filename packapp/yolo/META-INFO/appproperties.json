@@ -1,0 +1,20 @@
+{
+   "ManufacturerInfo":
+   {
+      "logoIcon":"logo.jpg",
+	  "website":"http://www.hikvision.com",
+	  "copyright":"copyright(C)-hikvision",
+	  "companyName":"Ecust"
+   },
+   "charge":0,
+   "StartupInfo":
+   {
+      "fileName":"yolomodel.sh",
+	  "type":"shell"
+   },"opensourceLicense":"",
+   "appName":"yolomodel",
+   "appID":"B2409jec1",
+   "healthCheck":"",
+   "menuName":"Yolov5 plate recognization APP",
+   "jumpPage":"html/index.html"
+}

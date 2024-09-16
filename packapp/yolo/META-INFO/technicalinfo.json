@@ -1,0 +1,50 @@
+{
+   "environment":
+   {
+      "chip":"G5",
+	  "basePackage":
+      {
+         "minimumVersion":"2.0.0",
+		 "maximumVersion":"",
+		 "id":"OPDEVSDK"
+      }
+
+   },
+   "requirement":
+   {
+      "disk":200,
+	  "NPU":
+      [
+         {
+            "gflops":0.2,
+			"id":1
+         }
+
+      ],
+	  "memory":50,
+	  "AImemory":200
+   },
+   "version":"2.0.0",
+   "authorizedType":"HIKVISION",
+   "dependencies":
+   {
+      "remote":
+      [
+         {
+            "id":"",
+			"version":""
+         }
+
+      ],
+	  "local":
+      [
+         {
+            "id":"",
+			"version":""
+         }
+
+      ]
+
+   }
+
+}
